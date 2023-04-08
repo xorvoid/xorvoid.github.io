@@ -6,7 +6,7 @@ html {
 #header,
 aside,
 img {
-    max-width: 500px;
+    max-width: 750px;
     margin: 0 auto;
     padding: 0;
     /* font-family: monospace; */
@@ -19,7 +19,7 @@ img {
 }
 
 #footer {
-    max-width: 500px;
+    max-width: 750px;
     margin: 0 auto;
     padding: 0;
     font-family: monospace;

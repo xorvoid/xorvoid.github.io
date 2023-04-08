@@ -1,0 +1,37 @@
+html {
+    overflow-y: scroll
+}
+
+#main,
+#header,
+aside,
+img {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0;
+    /* font-family: monospace; */
+    /* font-family: Arial, Helvetica, sans-serif; */
+}
+
+#header {
+    font-family: monospace;
+    text-align: center;
+}
+
+#footer {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0;
+    font-family: monospace;
+    text-align: left;
+}
+
+.grayscale {
+    -webkit-filter: grayscale(100%);
+    -moz-filter: grayscale(100%);
+    -ms-filter: grayscale(100%);
+    filter: grayscale(100%);
+    /* font-family: "Times New Roman", Times, serif; */
+    font-family: Roboto, Open Sans, Arial, Helvetica, sans-serif;
+    /* font-family: "Lucida Console", "Courier New", monosp */ace;
+}

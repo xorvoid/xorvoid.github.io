@@ -38,7 +38,7 @@ table, th, td {
     margin: 0 auto;
     padding: 0;
     font-family: monospace;
-    text-align: left;
+    text-align: center;
 }
 
 .grayscale {

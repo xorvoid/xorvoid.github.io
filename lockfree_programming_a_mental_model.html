@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="https://github.com/xorvoid">github</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Lockfree Programming: A Mental Model</h1>
+<p>Recently I decided to help a friend by coding up a special lockfree datastructure. Over my career, I’ve built and used a substantial number of lockfree datastructures. However, my friend has not and wanted to learn.</p>
+<p>While poking around the internet, I noticed a lot of unfortunate advice. For some reason, at least in Computer Science, people tend to have an attitude of “it’s complex and scary so you should just stay away”. I’ve always been allergic to this framing. Every new and unfamiliar thing tends to start out as “complex and scary” before the collective brain of humanity finds the right cognitive framing. Usually, this takes a generation or two. At any rate, we shouldn’t avoid hard things just because they’re hard.</p>
+<p>In particular, I find the literature on lockfree datastructures to have a “reference manual” problem. The content is available in great multitudes, but few people sit down to read a “reference manual” cover-to-cover. What’s missing is a framing / mindset / attitude towards the task. In this article, I’m going to build out a Mental Model for lockfree programming that is useful when creating or trying to understand lockfree datastructures.</p>
+<p>Now, most discussions of lockfree programming dive directly into jargon such as atomic operations, load-acquire, store-release, sequential consistency, memory-synchronization-barriers, compare-and-swap atomics, strong-memory models, weak-memory models, etc etc etc. All that dry jargon is a great way to fall asleep, but I need you awake and alert!</p>
+<p>Instead I’m going to start somewhere that few articles start: The Great Lie</p>
+<h2>The Great Lie of “One Big Machine”</h2>
+<p>Modern machines (2023) have a lots of cores. For example, a modern AMD Ryzen machine has 64 hardware cores. In a dual-socket configuration you can build a single machine with 128-cores. If you decide that Symmetric Multithreading (also known as Hyper-Threading) is helpful for your workload, you have 256 threads.</p>
+<p>But how is such a computer organized?</p>
+<p>A common, but naive and very incorrect model is this:</p>
+<p><img alt="image" src="one_big_machine.png" /></p>
+<p>In reality, it actually looks more like this:</p>
+<p><img alt="image" src="mesh_machine.png" /></p>
+<p>Why does this matter? Well, it means that you’re not programming a single computer. It means that you’re programming many individual computers that are tightly networked-together. In other words, you’re programming a supercomputer.</p>
+<p>I think it’s more helpful to re-frame the problem in this light. Here’s a helpful mapping:</p>
+<table>
+<thead>
+<tr>
+<th>Super-computer</th>
+<th>Modern CPU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cluster Node Processor</td>
+<td>CPU Core</td>
+</tr>
+<tr>
+<td>Cluster Node Memory</td>
+<td>CPU Cache</td>
+</tr>
+<tr>
+<td>Cluster Interconnect Fabric</td>
+<td>NOC (Network On Chip) Mesh, QPI, Infinity Fabric, etc</td>
+</tr>
+<tr>
+<td>Packet Frame</td>
+<td>Cache Line</td>
+</tr>
+<tr>
+<td>Maximum Transmision Unit (MTU)</td>
+<td>Cache Line Size (64 bytes, 128 bytes, etc)</td>
+</tr>
+<tr>
+<td><code>msg_send(send_value)</code></td>
+<td><code>*pointer_to_shared = send_value</code></td>
+</tr>
+<tr>
+<td><code>recv_value = msg_recv()</code></td>
+<td><code>recv_value = *pointer_to_shared</code></td>
+</tr>
+</tbody>
+</table>
+<p>Armed with this analogy, it becomes much easier to understand why concurrent programming is so different. The reality is that you’re coding on-top of a hidden <code>msg_send</code> and <code>msg_recv</code> system where packets are actually cpu cache lines, and load/store instructions implicitly trigger send/recv operations. Normally one doesn’t think of a pointer deference as triggering some cross-network operation, but this is effectively what is happening.</p>
+<p>When you're programming lockfree data-structures, it’s <strong>very</strong> important to keep this idea in your head. When, where, and how you dereference a pointer to shared state is critical.</p>
+<p>One might wish that things were less “implicit”. For example: explicitly form an entire cache-line sized packet and broadcast it out. Unfortunately, the evolution of computing,  with it’s unceasing desire for backwards-compatibility, has lead to the present day. For a small number of cores (dual-core, quad-core, etc), it’s not unreasonable to pretend there is one big shared RAM. But for large core count machines, the mental model become untenable.</p>
+<h2>Reasonable Behaviors</h2>
+<p>Armed with this new mental model, let’s go look at real programs running on this super-computer. With the “one big machine” idea, these behaviors may seem bizzare, but with our reframing, I think you’ll find them quite intuitive</p>
+<h3>1. Loads are frequently stale</h3>
+<pre><code class="language-c">int *ptr_to_shared;
+
+void thread_1()
+{
+  while (1) {
+    int data = *ptr_to_shared;
+    if (data != *ptr_to_shared) printf(&quot;This can and will happen.. often&quot;)
+  }
+}
+</code></pre>
+<p>In single-threaded programming if we load some value from a pointer into a local, we expect that the local variable value IS the value behind the pointer. But, the pointer is to shared state on our super-computer. It’s a message receive operation and it’s not reasonable to consider subsequent reads being the same.</p>
+<p>Reframing the code, it becomes clearer:</p>
+<pre><code class="language-c">int *ptr_to_shared;
+
+void thread_1()
+{
+  while (1) {
+    int data = msg_recv(ptr_to_shared);
+    if (data != msg_recv(ptr_to_shared)) printf(&quot;This can and will happen.. often&quot;)
+  }
+}
+</code></pre>
+<p>If you received two packets from a computer network, would you ever blindly assume they are identical? Hopefully not!</p>
+<p>The conclusion here is that you should never expect <code>data == *ptr_to_shared</code> to be true. From the moment the load completes, you should assume it’s already stale.</p>
+<h3>2. Stores take time to propagate</h3>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+  *ptr_to shared_1 = 1;
+  printf(&quot;value_2: %d\n&quot;, *ptr_to_shared_2);
+}
+
+void thread_2()
+{
+  *ptr_to shared_2 = 1;
+  printf(&quot;value_1: %d\n&quot;, *ptr_to_shared_1);
+}
+</code></pre>
+<p>It’s quite likely that we will get the output:</p>
+<pre><code class="language-c">value_1: 0
+value_2: 0
+</code></pre>
+<p>Reframing the code:</p>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+    msg_send(ptr_to shared_1, 1);
+  printf(&quot;value_2: %d\n&quot;, msg_recv(ptr_to_shared_2));
+}
+
+void thread_2()
+{
+    msg_send(ptr_to shared_2, 1);
+  printf(&quot;value_1: %d\n&quot;, recv_msg(ptr_to_shared_1));
+}
+</code></pre>
+<p>The <code>msg_send</code> and <code>msg_recv</code> are NOT synchronous and with the speed of light being finite, we have a very simple truth: delay exists. Think of <code>msg_send</code> as posting a network packet. Where is this packet after posting? Many possibilities: in the outgoing send queue, physically on the wire, in the destination recv queue, etc. Except we would use different terminology: CPU load/store queue, cache coherency protocol, etc.</p>
+<p>The takeaway here is (1) stores take time, and (2) loads and stores are asynchronous. Being asynchronous sounds annoying. Why not make everything synchronous? Imagine this for a second. Every operation on memory would require coordination with all CPUs on this great big super-computer. This is akin to a big global lock. What’s the point of having so many CPUs if they are just sitting around waiting for their turn to exclusively do work.</p>
+<p>Asynchrony is The Way.</p>
+<h3>4. Reordering</h3>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+    *ptr_to shared_1 = 1;
+  *ptr_to shared_2 = 1;
+}
+
+void thread_2()
+{
+  printf(&quot;value_1: %d\n&quot;, *ptr_to_shared_1);
+    printf(&quot;value_2: %d\n&quot;, *ptr_to_shared_2);
+}
+</code></pre>
+<p>We can get the output:</p>
+<pre><code class="language-c">value_1: 0
+value_2: 1
+</code></pre>
+<p>Each <code>msg_send</code> and <code>msg_recv</code> can have an independent delay. Consider our network analogy: some packets may take different paths and get reordered.</p>
+<h2>Fences bring Order to Chaos</h2>
+<p>How do we make sense out of this chaos? Causality is Key.</p>
+<p>Modern machines have various mechanisms to make these <code>msg_send</code> and <code>msg_recv</code> operations less asynchronous at the expense of performance. As we noted previously, full synchrony would defeat the point of multi-core, so we want to think carefully about how much synchrony we need.</p>
+<p>By trading some asynchrony for synchrony, we can buy something <em>very important</em>: Causality!</p>
+<h3>The most common reorderings</h3>
+<p>Consider this program:</p>
+<pre><code class="language-c">int    *ready_flag;  // init: *ready_flag == 0
+data_t *data;        // init: ???
+
+void writer_thread()
+{
+  *data = do_some_work_to_produce_data();
+  *ready_flag = 1;
+}
+
+data_t reader_thread()
+{
+  while (1) {
+    int ready = *ready_flag;
+    if (ready) break;
+  }
+  return *data;
+}
+</code></pre>
+<p>Here, the <code>reader_thread</code> wants to wait for some data produced by <code>do_some_busy_work_to_produce_data</code></p>
+<p>We have no reason to suspect this will work since (as discussed above), we can have reordering.</p>
+<p>Let’s reframe this example:</p>
+<pre><code class="language-c">int    *ready_flag;  // init: *ready_flag == 0
+data_t *data;        // init: ???
+
+void writer_thread()
+{
+  msg_send(data, do_some_work_to_produce_data());
+  msg_send(ready_flag, 1);
+}
+
+data_t reader_thread()
+{
+  while (1) {
+    int ready = msg_recv(ready_flag);
+    if (ready) break;
+  }
+  return msg_recv(data);
+}
+</code></pre>
+<p>It’s now easier to see two possible reorderings:</p>
+<ol>
+<li>Our <code>msg_send</code> could reorder in the <code>writer_thread</code></li>
+<li>Our <code>msg_recv</code> could reorder in the <code>reader_thread</code></li>
+</ol>
+<p>Let’s <em>invent</em> for a moment some mechanism that could suppress these reorderings.</p>
+<p>Consider:</p>
+<pre><code class="language-c">int    *ready_flag;  // init: *ready_flag == 0
+data_t *data;        // init: ???
+
+void writer_thread()
+{
+  msg_send(data, do_some_work_to_produce_data());
+  msg_send_fence();
+  msg_send(ready_flag, 1);
+}
+
+data_t reader_thread()
+{
+  while (1) {
+    int ready = msg_recv(ready_flag);
+    msg_recv_fence();
+    if (ready) break;
+  }
+  return msg_recv(data);
+}
+</code></pre>
+<p>Here we <em>invented</em> <code>msg_send_fence</code> and <code>msg_recv_fence</code> to prevent the re-orderings. You can imagine the CPU stalling on these fences, waiting until the <code>msg_send</code> or <code>msg_recv</code> are completed.</p>
+<p>These <em>inventions</em> are similar to the real thing:</p>
+<ul>
+<li><code>msg_send_fence</code> ⇒ <code>store_release</code></li>
+<li><code>msg_recv_fence</code> ⇒ <code>load_acquire</code></li>
+</ul>
+<p>When someone mentions <em>Acquire and Release Semantics</em>, this is what they’re talking about.</p>
+<p>Let’s translate the code back:</p>
+<pre><code class="language-c">int    *ready_flag;  // init: *ready_flag == 0
+data_t *data;        // init: ???
+
+void writer_thread()
+{
+  *data = do_some_work_to_produce_data();
+  STORE_RELEASE();
+  *ready_flag = 1;
+}
+
+data_t reader_thread()
+{
+  while (1) {
+    int ready = *ready_flag;
+    LOAD_ACQUIRE();
+    if (ready) break;
+  }
+  return *data;
+}
+</code></pre>
+<p>The actual semantics are stronger than our invention:</p>
+<ul>
+<li><code>LOAD_ACQUIRE()</code>  ⇒ Loads before <code>LOAD_ACQUIRE</code> cannot reorder with Loads &amp; Stores after it</li>
+<li><code>STORE_RELEASE()</code> ⇒ Loads &amp; Stores before <code>STORE_RELEASE</code> cannot reorder with Stores after it</li>
+</ul>
+<p>Notice what these don’t prevent:</p>
+<ul>
+<li><code>LOAD_ACQUIRE()</code> ⇒ Stores before <code>LOAD_ACQUIRE</code> can reorder with anything after</li>
+<li><code>STORE_RELEASE()</code> ⇒ Loads after <code>STORE_RELEASE</code> can reorder with anything before</li>
+</ul>
+<p>Why these?</p>
+<p>Simply put, Modern CPUS get a lot of performance out of <em>hoisting loads.</em> Loading memory can be very expensive, so CPUs go to great lengths to load data as soon as possible. They will even speculate on the memory needed. Doing so allows the memory delay to overlap with other operations and hopefully prevent stalling the CPU to wait for it once it is actually needed.</p>
+<p>By contrast, CPUs care little about propagating Stores. High latency on commiting stores to main memory would not delay the local CPU. The general goal is: (1) start Loads sooner, (2) finish Stores later.</p>
+<p>Notice that the <code>LOAD_ACQUIRE</code> and <code>STORE_RELEASE</code> fences do not inhibit these critical operations unless they are absolutely required. We allow Stores to drop down past a <code>LOAD_ACQUIRE</code> and we allow Loads to lift up above a <code>STORE_RELEASE</code></p>
+<p>Luckily, a lot of interesting lockfree code can be correctly constructed with just these. In fact, it's such a nice point in the tradeoff curve, that some machines act like <code>LOAD_ACQUIRE</code> and <code>STORE_RELEASE</code> barriers are everywhere (e.g. x86-64 for most operations).</p>
+<p>However, sometimes more is needed.</p>
+<h3>The less common reorderings</h3>
+<p>Let’s return to a previous example:</p>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+  *ptr_to shared_1 = 1;
+  int val = *ptr_to_shared_2;
+  printf(&quot;value_2: %d\n&quot;, val);
+}
+
+void thread_2()
+{
+  *ptr_to shared_2 = 1;
+  int val = *ptr_to_shared_1;
+  printf(&quot;value_1: %d\n&quot;, val);
+}
+</code></pre>
+<p>We explained above that the following output is possible:</p>
+<pre><code class="language-c">value_1: 0
+value_2: 0
+</code></pre>
+<p>Let’s try to understand why our <code>LOAD_ACQUIRE</code> and <code>STORE_RELEASE</code> barriers won’t help</p>
+<p>Consider this:</p>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+  *ptr_to shared_1 = 1;
+  LOAD_ACQUIRE();
+  STORE_RELEASE();
+  int val = *ptr_to_shared_2;
+  printf(&quot;value_2: %d\n&quot;, val);
+}
+
+void thread_2()
+{
+  *ptr_to shared_2 = 1;
+  LOAD_ACQUIRE();
+  STORE_RELEASE();
+  int val = *ptr_to_shared_1;
+  printf(&quot;value_1: %d\n&quot;, val);
+}
+</code></pre>
+<p>But..</p>
+<ol>
+<li>A load can reorder above a <code>STORE_RELEASE</code> fence, and</li>
+<li>A store can reorder below a <code>LOAD_ACQUIRE</code> fence, and</li>
+<li>A load and store with no fences between them are completely asynchronous and have any order</li>
+</ol>
+<p>So, we could get this ordering:</p>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+
+  LOAD_ACQUIRE();
+  int val = *ptr_to_shared_2;
+  *ptr_to shared_1 = 1;
+  STORE_RELEASE();
+
+  printf(&quot;value_2: %d\n&quot;, val);
+}
+
+void thread_2()
+{
+  LOAD_ACQUIRE();
+  int val = *ptr_to_shared_1;
+  *ptr_to shared_2 = 1;
+  STORE_RELEASE();
+
+  printf(&quot;value_1: %d\n&quot;, val);
+}
+</code></pre>
+<p>Uh oh! We need a new barrier to prevent this problem. Let’s call it <code>MEM_FENCE</code> and specify that it prevents all reorderings.</p>
+<p>So, we have:</p>
+<pre><code class="language-c">int *ptr_to_shared_1;  // init: *ptr_to_shared_1 == 0
+int *ptr_to_shared_2;  // init: *ptr_to_shared_2 == 0
+
+void thread_1()
+{
+  *ptr_to shared_1 = 1;
+  MEM_FENCE();
+  int val = *ptr_to_shared_2;
+  printf(&quot;value_2: %d\n&quot;, val);
+}
+
+void thread_2()
+{
+  *ptr_to shared_2 = 1;
+  MEM_FENCE();
+  int val = *ptr_to_shared_1;
+  printf(&quot;value_1: %d\n&quot;, val);
+}
+</code></pre>
+<p>In practice, this fence has many names:</p>
+<ul>
+<li>A Full Memory Barrier</li>
+<li>C++ atomics sequential-consistency fence</li>
+<li>GCC: <code>__sync_synchronize()</code></li>
+<li>x86-64: <code>mfence</code> instruction</li>
+<li>ARM: <code>dmb</code> instruction</li>
+<li>PowerPC: <code>hwsync</code> instruction</li>
+</ul>
+<h2>Conclusion</h2>
+<p>As you can see, things seem far less scary and mystifying when you view a modern machine as a super-computer of many independent machines on a fast interconnect network. The operations one thinks about while doing lockfree programming is the series of <code>msg_send</code> and <code>msg_recv</code> operations across this “interconnect”. These operations are highly asynchronous. But, it’s quite straight-forward to enforce some order and structure to this chaos. Whenever things get a tad confusing, it’s quite easy to translate into the <code>msg_send</code> and <code>msg_recv</code> framing and think instead about network messages.</p>
+<p>My original goal in writing was to communicate some practical advice and “guidelines” for successful lockfree programming. But when I sat down to write that, I quickly realized that  a Mental Model needed to be developed first in order to frame the subject correctly. In the next (hypothetical) post, I’d like to return to that original goal and give some practical advice.</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <a href="/">home</a>
+  </div>
+</body>
+</html>

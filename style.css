@@ -13,6 +13,21 @@ img {
     /* font-family: Arial, Helvetica, sans-serif; */
 }
 
+pre {
+    background: #e0e0e0;
+    border: 1px solid #d0d0d0
+    border-radius: 0.4em;
+    padding: 10px;
+}
+
+table, th, td {
+    border: 1px solid;
+    border-collapse: collapse;
+    padding: 3px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
 #header {
     font-family: monospace;
     text-align: center;

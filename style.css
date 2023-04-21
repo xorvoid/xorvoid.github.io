@@ -36,6 +36,7 @@ table, th, td {
 #footer {
     max-width: 750px;
     margin: 0 auto;
+    margin-bottom: 40px;
     padding: 0;
     font-family: monospace;
     text-align: center;

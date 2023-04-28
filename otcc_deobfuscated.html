@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Obfuscated Tiny C Compiler: Deobfuscated</h1>
+<p>I was looking for a minimalist C compiler that is easy enough to retarget for another ridiculous project of mine (which I’ll possibly publish some day here). This search led me to <a href="https://bellard.org/tcc/">TCC</a> (Tiny C Compiler) and subsequently <a href="https://bellard.org/otcc/">OTCC</a> (Obfuscated Tiny C Compier).</p>
+<p>This is not my first time discovering Fabric Bellard’s OTCC. However, on this particular day, I decided I wanted more. I wanted to understand. Fully. So I deobfuscated the entire compiler, turning over every rock, poking at the innards of every worm, and not stopping until enlightenment was attained.</p>
+<h2>Show Me The Code Already!</h2>
+<p>Here are links to code for impatient people:</p>
+<ul>
+<li>Original: <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc.c">otcc.c</a></li>
+<li>Expanded: <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_expanded.c">otcc_expanded.c</a></li>
+<li>Commented: <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented.c">otcc_commented.c</a></li>
+<li>Original (fixed): <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_fix.c">otcc_fix.c</a></li>
+<li>Commented (fixed): <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented_fix.c">otcc_commented_fix.c</a></li>
+<li>Full Repository: <a href="https://github.com/xorvoid/otcc_deobfuscated">github</a></li>
+</ul>
+<h4>Original (<a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc.c">otcc.c</a>)</h4>
+<p>Strange to say, but it’s remarkable how unobfuscated it actually is! What looks like obfuscation is largely done to save as much space as possible: single char variables, reused variables, K&amp;R function style, omitting types, etc. Even tricks often associated with obfuscation such as <code>#define</code>, are actually used to compress and save space. The source has a lot of obscure constants, but those are often just x86-32 machine code literals, naturally obfuscated. Finally, there is an impressive operator table encoded in a compact string literal. Code formatting likewise is very minimal: line-breaks after each ‘;’ or ‘}’</p>
+<p>The space savings are reinvested by implementing a larger set of C features; an impressively large set:  (<a href="https://bellard.org/otcc/">here</a> and <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otccex.c">here</a>)</p>
+<p>All of this is accomplished in less than one 4KB x86-32 memory page of source code (3301 bytes)</p>
+<h4>Expanded (<a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_expanded.c">otcc_expanded.c</a>)</h4>
+<p>Here I took the obvious first steps:</p>
+<ol>
+<li>Run the preprocessor (<code>gcc -E</code>)</li>
+<li>Sensibly indent and format</li>
+</ol>
+<p>Otherwise, little else was done</p>
+<h4>Commented (<a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented.c">otcc_commented.c</a>)</h4>
+<p>Here I took apart every detail and commented it obsessively. My goal, however, was to avoid large breaking source transformations. The original obfuscated source structure remains intact, and I believe a straightforward mechanical re-obfuscator could generate the original source with a matching <code>diff</code> (I did not verify this claim, however).</p>
+<h4>Fixed (<a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_fix.c">otcc_fix.c</a> and <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented_fix.c">otcc_commented_fix.c</a>)</h4>
+<p>These versions contain fixes that allow the code to compile and run on a modern x86-32 linux distro (more on this later).</p>
+<h2>High-level Overview</h2>
+<p>The commented version is quite extensive and reading inline explanations is better anyways, so I won’t repeat that work here. Go read it <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented.c">there</a>. Instead, I want to discuss some bigger-picture structural observations here.</p>
+<h3>Raw Arrays as an Associative Data Structure</h3>
+<p>Data structures are key to compiler construction, but this C has no <code>struct</code>. Instead, a symbol table is built out of 2 ordinary arrays. The first array (<code>symkey_base</code>) stores ascii text and can be thought of as the “keys” of an associative array. It’s easy to search with <code>strstr()</code>. Linear search here means quadratic runtimes, but it’s a great trade. It’s conserving the most precious resource: source code chars. This search yields an index.</p>
+<p>The index is used to access the second array (<code>symval_base</code>) which is used as a value array of symbol information.</p>
+<p>Both of these arrays are abused in many fabulous ways which you can read in the code comments.</p>
+<h3>Parser Style</h3>
+<p>The parser is a fairly standard textbook Pratt-style recursive-descent parser that proceeds top-down: declarations ⇒ statements ⇒ binary expressions ⇒ unary expressions</p>
+<p>Not surprising, though rarely seen these days, it’s a single pass compiler that tokenizes, expands macros, parses, and emits code at the same time. This is key: it avoids requiring complex data-structures in a minimalist implementation language.</p>
+<p>But, to do so, it needs to handle…</p>
+<h3>Back-patching</h3>
+<p>Compiling in a single-pass means that lots of unresolved branch instructions get emitted before their targets are known. These need to get fixed up later. But, there can be lots of these to fix up, from possibly deep nesting of control-flow structures! Another data structure is required.</p>
+<p>OTCC uses a clever solution here. I’ve seen it elsewhere, and don’t know where it originated. I presume it was widely known before this compiler was written. Or perhaps not. I would love to know if you, Ms Future Blog Reader, happens to know.</p>
+<p>Effectively, it constructs a linked-list through unresolved jump target immediates by chaining jumps with the same unresolved target. When a target is resolved finally, the compiler walks this linked-list chain, patching each one.</p>
+<p>If that's confusing, I'm sorry. A visual diagram would help, but I don't feel like making one.</p>
+<p>But perhaps this helps instead:</p>
+<ul>
+<li>A jump target is added to the list: <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented.c#L521">here</a></li>
+<li>All targets in the list are patched: <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented.c#L542">here</a></li>
+<li>This function walks the list and patches: <a href="https://github.com/xorvoid/otcc_deobfuscated/blob/main/otcc_commented.c#L300">here</a></li>
+</ul>
+<h3>Operator Data Encoding</h3>
+<p>A surprisingly large set of C operators are supported by employing a clever encoding to build an operator table in an ordinary C string. A base-64 encoding is used that is carefully constructed to avoid both the double-quote character (<code>"</code>) and the escape character (<code>\</code>). For each operator in the tokenizer, this operator table is fully unpacked and linearly searched for matches. On success, the tokenizer produces both the precedence of the operator (for the Pratt parser) and a blob of x86-32 machine code to emit (except when that is also abused, haha).</p>
+<h3>Executing In-Process and Calling libc</h3>
+<p>OTCC is really a JIT compiler runtime of sorts. It generates machine code into a buffer, casts it into a function pointer, and jumps into it. Since it’s executing in the same process as the compiler, it doesn’t need deal with a linker nor a loader nor a binary file format (e.g. ELF). This greatly simplifies things. But it also gives a special super-power. It can lookup libc functions via <code>dlsym()</code> and compile calls to them also. Since it’s executes in the same process, it Just Works. This gives OTCC access to all of the important libc functions and is a major source-text savings (e.g. <code>strstr</code> to do symbol-table lookups).</p>
+<h3>Codegen</h3>
+<p>The x86-32 codegen is quite vanilla despite being obfuscated as decimal integer literals. The <code>EAX</code> register is used for all expression results until a binary operator is encountered, where the left-hand-side moves to the stack and then to <code>ECX</code>. There are some fun tricks to do memory operations on both global and local variables with the same codegen routines by setting one specific bit in the ModR/M byte.</p>
+<p>Luckily, the x86-32 Linux ABI is quite friendly to simple codegen as all function arguments and all function local can be stored on the stack and indexed with a negative or small positive stackframe offset. Contrast this with x86-64 where specific argument registers must be used (more on this later).</p>
+<p>Also, this compiler benefits from and heavily exploits the fact that <code>sizeof(int) == sizeof(void*)</code> on x86-32 by not having to implement pointer types and just using <code>int</code> everywhere. The syntax <code>*(int*)</code> is a special case handled by the parser. It could be viewed as a <code>load_u32 / store_u8</code> operator. Similarly, we have <code>*(char*)</code> as a <code>load_u8 / store_u8</code> operator. Despite having the <code>char</code> keyword, this compiler doesn't really have true types: everything is an <code>int</code>, often heavily abused.</p>
+<h3>Error-handling</h3>
+<p>I just had to say something about error-handling because this has ... NONE. To be fair, it’s a toy that was entered in a contest and not intended to be <code>Production Quality</code> by any stretch of the phrase. But, it’s interesting just how far the “lack of error-handling” is exploited, and that is noteworthy. Everywhere in the source is the assumption that input data is well-formed. Any deviation will very likely lead to a nasty crash.</p>
+<p>For example:</p>
+<ul>
+<li>Tokens carry no type. Sometimes they are ASCII chars, keyword values, or pointers into symbol data. The parser “just knows”</li>
+<li>The parser just advances past tokens without checking them  because well-fromed C programs are supposed to have a certain punctuation token at that location.</li>
+<li>Heap pointers in the compiler are assumed to be <code>&lt; 0x8000000</code> (or <code>&gt; 0</code> as a signed <code>int</code>) and this idea is used to disambiguate global-variable absolute-addresses from local-variable stack-offsets (more on this later)</li>
+<li>Magic integers <code>1</code> or <code>2</code> are mixed with pointer data regularly and checked only where relevant for well-formed inputs</li>
+<li>... etc, etc, etc ...</li>
+</ul>
+<p>This should go without saying: If you're not developing a toy program, DON'T DO THIS. And if you are developing a toy program: Send It To Me =)</p>
+<h2>Getting it running</h2>
+<p>Sadly, there isn’t much in the way of x86-32 machines these days, and my normal machine is now an Aarch64 MacBook M1. So, I set up <code>qemu-system-i386</code> with Alpine Linux.</p>
+<p>Sadly this wasn't enough. This modern distro uses musl and it’s <code>malloc()</code> tries to use <code>mmap()</code> where possible, producing allocations in the upper half of the virtual address space. This collides with OTCCs use of the negative range as “stack offsets”.</p>
+<p>A large number of fixes were attempted:</p>
+<ul>
+<li>Override <code>malloc()</code> via <code>LD_PRELOAD</code> and call <code>sbrk()</code>. Failed because musl rejects calls to sbrk that increment it!</li>
+<li>Make the <code>sbrk()</code> syscall directly. Works, but crashes before fopen (maybe colliding with musl malloc?)</li>
+<li>Use a bump allocator on a static buffer in the <code>LD_PRELOAD</code> library. Darn, the entire library gets mapped into high mem.</li>
+<li>Just statically-link the bump-allocator so the static buffer is in the low-memory <code>.text</code> region. Opps, stage2 compiler will still pick up the original malloc from <code>dlsym()</code></li>
+<li>Go back to <code>LD_PRELOAD</code> but use <code>mmap()</code> with an address hint to get a block of memory at <code>0x70000000</code> and then bump-allocator. Great!</li>
+</ul>
+<p>Next problem is that Alpine maps <code>musl libc</code> to high-mem also which means that global vars from <code>musl</code> also get miscompiled! (e.g. <code>stdin</code>).</p>
+<p>Removing the <code>stdin</code> default gets the compiler compiling itself, but <code>otccex.c</code> is miscompiled by the stage2 for the same reason.</p>
+<p>The solution to all ended up being simple (ha):</p>
+<pre><code>$ diff otcc.c otcc_fix.c
+168c168
+&lt; s((e&lt;512)&lt;&lt;7|5,n;
+---
+&gt; s((e&lt;512&amp;-e&lt;512)&lt;&lt;7|5,n;
+</code></pre>
+<p>Just have the OTCC codegen generate code for locals if they have small offsets in <code>(-512, 512)</code></p>
+<p>No more funky <code>malloc</code> shims nor <code>LD_PRELOAD</code> tricks</p>
+<p>All of the following commants work now:</p>
+<pre><code>$ ./otcc otccex.c 5
+fib(5) = 5
+fact(5) = 120
+
+$ ./otcc otcc_fix.c otccex.c 5
+fib(5) = 5
+fact(5) = 120
+
+$ ./otcc_commented otccex.c 5
+fib(5) = 5
+fact(5) = 120
+
+$ ./otcc_commented otcc_commented_fix.c otccex.c 5
+fib(5) = 5
+fact(5) = 120
+
+</code></pre>
+<h2>Modernizing?</h2>
+<p>I considered modernizing OTCC to x86-64 but it’s not so straightforward due to the ABI. Compiling to the system ABI opens the door to the dlsym trick. Porting to x86-64 has at least two problems (and likely more that I haven't yet realized):</p>
+<ol>
+<li>The x86-64 ABI puts arguments in registers rather than the stack</li>
+<li>We no longer have <code>sizeof(int) == sizeof(void*)</code> so the agressive type-punning is broken</li>
+</ol>
+<p>These are probably both possible to overcome, but I haven’t attempted it.</p>
+<p>Future work I suppose …</p>
+<h2>Closing thoughts</h2>
+<p>These days, we live in a world built on seemingly endless piles of code. If you’re fortunate (or misfortunate) enough to work on core parts of an important software system, you know how hard it is to keep it all in your head. In fact, you simply can’t. Software is big, it’s built by teams, and knowledge is distributed across many minds.</p>
+<p>Taking apart OTCC is like visiting another planet in an secluded part of the universe, where few care to venture. In just ~500 lines, you can have immense complexity and functionality. But, perhaps, surprisingly you can actually fit it all in one brain. There’s a certain beauty to understanding how everything fits together end-to-end in the maximum detail, nothing over-simplified as a crutch for the human brain. It’s a luxury that software in 2023 doesn’t provide.</p>
+<p>I’m not claiming it’s better. That would assume a “metric-space for software-quality” which is almost certainly too hard to define. But, a little reflection might be useful.</p>
+<p>And arguably today’s software is better.  Is it not better to have knowledge distributed across minds versus a single expert mind who can get hit by a bus at any time? And anyone that complains about bad software has to only go back a few decades to find significantly worse problems. For example: A good feature of old Sun machines was that they booted so fast, which of course was needed because they crashed so often (“Pros and Cons of Suns” from The Unix Hater’s Handbook). These days, unless you use some sketchy kernel driver/module, it’s not easy to panic the kernel. Software has gotten unreasonably stable. When we complain about software being awful and broken, it's more an indicator of how far we've shifted the goal-posts over the years.</p>
+<p>But at the same time, when modern software breaks, it is so incredibly complex that it can be shockingly hard to fix. There is something grand about having a complete mental model and forcing things to be overly simple that leads to efficiency on many levels.</p>
+<p>To be clear, OTCC is just a toy. But, perhaps I’m surprised at how interesting of a toy it is.. and perhaps, by contrast, how uninteresting much of modern software often is.</p>
+<p>But, there’s no real point to any of this, it was all for fun. And I hope you had fun too. If not, here’s an entertaining <a href="https://www.youtube.com/watch?v=ki35Tnm4UQ4">cat video</a></p>
+<p>Stay Calm and Carry On!</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

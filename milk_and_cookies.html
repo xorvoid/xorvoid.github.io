@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Milk and Cookies: An Abstract Algebra</h1>
+<p>Suppose you're sitting in an electronics class on a Wednesday. Your teacher, always eager to retain the
+attention of the TikTok generation, decides to attempt a colorful metaphor.</p>
+<p>The subject is electrical power:</p>
+<pre><code>Power = Voltage * Current
+</code></pre>
+<p>So the teacher says:</p>
+<p>Imagine their are 2 parties in your neighborhood and we want to know their <strong>power</strong>:</p>
+<ul>
+<li><u>Party 1:</u> Ten people are sitting around quietly eating milk and cookies 😴</li>
+<li><u>Party 2:</u> Two people are losing their minds on meth 🤪</li>
+</ul>
+<p>And these parties end up having the same <strong>power</strong>, that is:</p>
+<pre><code>10 * people * (milk + cookies) = 2 * people * meth
+</code></pre>
+<p>The class chuckles as their neural-plasticity forms a lifelong bond between electrical power, milk, cookies, and meth.</p>
+<p>But you wonder:</p>
+<p>What happens when you multiply <code>people</code> by <code>meth</code>?</p>
+<p>So you invent a new algebra.</p>
+<h2>Abstract Algebra: Fields</h2>
+<p>A <strong>Field</strong> is like normal math except the numbers are <strong>Weird</strong>. But we can still add, subtract, multiply, and divide these weird numbers.</p>
+<p>We can also use cool words like <code>Group</code>, <code>Ring</code>, <code>GF(n)</code>, <code>Galois-Fields</code>, <code>Extension-Fields</code>, etc to make outsiders confused and boost our fragile egos. This part is only required in some special groups. 🥁</p>
+<p>You can read the real definition <a href="https://en.wikipedia.org/wiki/Field_(mathematics)">here</a></p>
+<h3>Numbers for GF(7)</h3>
+<p>Here are our weird numbers:</p>
+<pre><code>dead, people, milk, cookies, meth, two, ten
+</code></pre>
+<p>Fortunately, 7 elements suggests that we can find an isomorphism to <code>GF(7)</code>
+and we won't have to deal with the polynomials of <code>GF(p^k)</code> extension fields (or in other words:
+we won't have to giberish our gibberishy into gibberishum due to the gibberish-theorem: hooray!).</p>
+<p>Naturally, we'll assign <code>"dead" &lt;=&gt; 0</code>, <code>"two" &lt;=&gt; 2</code>, and <code>"ten" &lt;=&gt; 10</code>.
+But 10 isn't in <code>GF(7)</code> and instead maps to <code>10 - 7 = 3</code>.</p>
+<h3>Simplifying our constraint equation</h3>
+<p>Our constraint equation is:</p>
+<pre><code>ten * people * (milk + cookies) = two * people * meth
+</code></pre>
+<p>But, <code>people</code> just create problems so let's get rid of them:</p>
+<pre><code>ten * (milk + cookies) = two * meth
+</code></pre>
+<p>We'll need the to divide by "ten" or multiply by it's inverse:</p>
+<pre><code>inv(&quot;ten&quot;) = inv(3) = 5  [check: 3*5 = 15 == 1 (mod 7)]
+</code></pre>
+<p>Simplifying further:</p>
+<pre><code>inv(ten) * ten * (milk + cookies) = inv(ten) * two * meth
+milk + cookies = 5 * 2 * meth
+milk + cookies = 10 * meth
+milk + cookies = ten * meth
+milk + cookies = 3 * meth
+</code></pre>
+<h3>Assigning the remaining numbers</h3>
+<p>Here, we notice that 3 is an <code>additive-group-generator for GF(7)</code> which tells us that <code>milk + cookies</code> can result in anything that's 10 meth potent. And, this is why a crazy guy named Santa will eat them 336,150,386 times in a single evening to fuel his global chimney-riding adventures (<a href="https://www.delish.com/food/news/a40538/how-many-cookies-does-santa-eat/">link</a>).</p>
+<p>We need to now find a valid assignment given that we've already assigned these:</p>
+<pre><code>&quot;dead&quot; &lt;=&gt; 0
+&quot;two&quot;  &lt;=&gt; 2
+&quot;ten&quot;  &lt;=&gt; 3
+</code></pre>
+<p>The following are left: <code>1, 4, 5, 6</code></p>
+<p>Assigning <code>"meth" &lt;=&gt; 6</code> seems appropriate as it's some powerful stuff, alas that would require
+<code>milk + cookies = 4</code>. Unfortunately, we'd need 1 and 3 and we've already assigned <code>"ten" &lt;=&gt; 3</code></p>
+<p>Let's make a table of possibilities:</p>
+<table>
+<thead>
+<tr>
+<th>meth</th>
+<th>3 * meth</th>
+<th>milk + cookies = 3 * meth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>3</td>
+<td>4 + 6 = 3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>5</td>
+<td>(not assignable with 1,5,6)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>1</td>
+<td>(not assignable with 1,4,6)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>4</td>
+<td>(not assignable with 1,4,5)</td>
+</tr>
+</tbody>
+</table>
+<p>So, I guess meth is the multiplicative identity: <code>"meth" &lt;=&gt; 1</code> which is like super deep man.</p>
+<h3>The Full Isomorphism to GF(7):</h3>
+<pre><code>&quot;dead&quot;     &lt;=&gt;   0
+&quot;meth&quot;     &lt;=&gt;   1
+&quot;two&quot;      &lt;=&gt;   2
+&quot;ten&quot;      &lt;=&gt;   3
+&quot;milk&quot;     &lt;=&gt;   4
+&quot;people&quot;   &lt;=&gt;   5
+&quot;cookies&quot;  &lt;=&gt;   6
+</code></pre>
+<h2>Some Powerful Results</h2>
+<p>From this algebra we can deduce many facts about ordinary life:</p>
+<table>
+<thead>
+<tr>
+<th>expression</th>
+<th>result</th>
+<th>discussion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>people * meth</code></td>
+<td><code>people</code></td>
+<td>That's a relief. You're still a person. Not "milk" or "cookies" or.. "dead"</td>
+</tr>
+<tr>
+<td><code>milk + meth</code></td>
+<td><code>people</code></td>
+<td>Hmmm.. like a chia pet?</td>
+</tr>
+<tr>
+<td><code>cookies * cookies</code></td>
+<td><code>meth</code></td>
+<td>Makes sense: Cookies are Great!</td>
+</tr>
+<tr>
+<td><code>cookies + meth</code></td>
+<td><code>dead</code></td>
+<td>Public Service Announcement: Avoid!</td>
+</tr>
+<tr>
+<td><code>milk + cookies = milk * cookies</code></td>
+<td>true</td>
+<td>There's no wrong way to have milk and cookies</td>
+</tr>
+</tbody>
+</table>
+<h2>Calculator (<a href="https://github.com/xorvoid/milk_and_cookies">link</a>)</h2>
+<p>I wrote a fun little calculator for exploring this algebra (<a href="https://github.com/xorvoid/milk_and_cookies">here</a>)</p>
+<p>It will print out the addition and multiplication tables and evaluate arbitrary expressions:</p>
+<p><img alt="image" src="milk_and_cookies.png" /></p>
+<h2>Conclusion</h2>
+<p>What does this have to do with the Power Formula, you ask?</p>
+<p>Thanks for asking. That was very kind of you. And the answer is: Nothing. Absolutely nothing. Now, I could make up a long and winding story to connect back to the power formula that might distract you from the boring things in your life, but I'd rather just have some milk and cookies 🥛 🍪</p>
+<p>Finally, stay away from meth, boys and girls! 🛑</p>
+<p>After all, you can just have Squared Cookies instead.
+Cubic, Quartic, Quintic, and other higher-dimensional cookie consumptions are safe as well!
+If you do make a higher-dimensional cookie, you should send me one (<a href="mailto:xorvoid@gmail.com">email</a>)</p>
+<p>Have a lovely day!</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

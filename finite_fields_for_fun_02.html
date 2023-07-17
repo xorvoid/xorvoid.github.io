@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (02)</h1>
+<p>Navigation |
+<a href="finite_fields_for_fun_01.html">first</a> |
+<a href="finite_fields_for_fun_03.html">next</a> |
+<a href="finite_fields_for_fun_01.html">previous</a></p>
+<h2>Group Theory</h2>
+<p>This is part 2 of a series on Finite Fields. In this part, we'll give a gentle introduction to Group Theory.</p>
+<h3>Clock Arithmetic</h3>
+<p>A Group is one of the basic algebra structures. It's simply a set of "numbers" and an "operation" on them.
+The operation is normally refered to as "addition" or "multiplication" but the operation may behave somewhat
+different. In fact, you are already very familair with a Group: A Clock.</p>
+<p>Of course, as computer scientists, we must start our numbers at 0 because we're all neurodivergent and we take great
+pleasure in annoying mathematicians.</p>
+<p><img alt="image" src="modular_clock_pos02.png" /></p>
+<p>Our clock uses the numbers <code>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}</code> and has the operation of <code>"an hour passes"</code>.
+If the hour-hand points to 2 and the "operation" occurs, it now points at 3.</p>
+<p><img alt="image" src="modular_clock_pos03.png" /></p>
+<p>Similairly, if it points at 11, then after the "operation" it will point to 0 (rolls over to the beginning).</p>
+<p><img alt="image" src="modular_clock_pos00.png" /></p>
+<p>Or we can "add" 5 hours to 8 and we will get 1.</p>
+<p><img alt="image" src="modular_clock_pos01.png" /></p>
+<p>Or we can "add" 0 hours and the hour will stay the same!</p>
+<p>We can even "subtract", which is going backwards around the clock. Subtracting 5 hours from 8 gives 3. Just like arithmetic over integers, subtraction is just addition
+in disguise. We just add the "negative" or we multiply by the "inverse". If we want to subtract 5, we could instead add
+7:</p>
+<pre><code>8 - 5 = 8 + (-5) = 8 + 7 = 3
+</code></pre>
+<p><img alt="image" src="modular_clock_subtraction.png" /></p>
+<p>Summarizing, we can do all of the following on this clock:</p>
+<ul>
+<li>We can <code>add n hours</code> to any position, yielding a new position on the clock</li>
+<li>We can find an <code>additive-inverse</code> of any position that can convert any subtraction into an addition</li>
+<li>We can add <code>zero</code> and the position doesn't change</li>
+<li>We can do <code>associative</code> addition, i.e. (1 + 2) + 3 = 1 + (2 + 3)</li>
+</ul>
+<p><i><u>Exercise:</u></i> Work through some examples and convince yourself of these facts. Internalizing these ideas is critical to
+keeping your sanity as things get more abstract.</p>
+<p>Here are some examples of operations on our clock. Work through each to make sure you understand completely.
+Try your own examples. I'm serious. We are going to generalize / abstract this significantly and it helps to have a very solid
+understanding of a concrete example.</p>
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+<th>-b</th>
+<th>a + b</th>
+<th>a - b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>0</td>
+<td>0</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>11</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>9</td>
+<td>7</td>
+<td>1</td>
+</tr>
+<tr>
+<td>11</td>
+<td>2</td>
+<td>10</td>
+<td>1</td>
+<td>9</td>
+</tr>
+<tr>
+<td>6</td>
+<td>6</td>
+<td>6</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h3>Group definition</h3>
+<p>The clock example we gave above is an example of a <i>Group</i>. It's helpful to keep the example in mind as we start introducing
+abstract definitions.</p>
+<p>A <i>Group</i> is defined as some operation (<code>+</code>) defined over a set of <code>"numbers"</code> which follow these rules:</p>
+<ol>
+<li>Associativity: <code>(a + b) + c = a + (b + c)</code></li>
+<li>Identity: one of the numbers <code>e</code> acts like a <code>"zero"</code>: <code>a + e = a, e + a = a</code></li>
+<li>Inverse: each element <code>a</code> has some unique element <code>b</code> where <code>a + b = e</code></li>
+</ol>
+<p>And that's it.</p>
+<p><i><u>Exercise:</u></i> Convince yourself that our clock is a group according to these definitions.</p>
+<h3>Modular Arithmetic</h3>
+<p>Our clock arithmetic group is an example of a Modular Arithmetic. In particular, it's the special case where <code>modulus n = 12</code>.
+There's no special reason we need to use 12. We can use any <code>modulus n</code> we like. Over the operation of addition, this always
+forms a group!</p>
+<p>In modular arithmetic, the following notation is commonly used:</p>
+<pre><code>a == b (mod n)
+</code></pre>
+<p>This says that <code>a</code> and <code>b</code> are logically the same value. Consider our clock again, if the hour hand points at <code>5</code>
+and we add <code>12 hours</code>, we'd be at <code>17</code> right? But we don't have a 17 hour hand. Instead we roll over to 5 again.</p>
+<p>In modular arithmetic notation, we'd express this as:</p>
+<pre><code>17 == 5 (mod 12)
+</code></pre>
+<p>Similairly there are an infinite number of integers that are "equivalent" to 5 when modulus n=12:</p>
+<pre><code>5 == 5 (mod 12)
+17 == 5 (mod 12)
+29 == 5 (mod 12)
+41 == 5 (mod 12)
+53 == 5 (mod 12)
+(... etc ...)
+</code></pre>
+<p>In general:</p>
+<pre><code>5 + k*12 == 5 (mod 12)   [for any integer k]
+</code></pre>
+<p>In this way, we can think of modular arithmetic as doing normal arithmetic and then only keeping the remainder
+after applying the modulus.</p>
+<p><i><u>Exercise:</u></i> Play around with the modular arthmetic where n=5: (a) what are the numbers? (b) what is the identity number?
+(c) what is the "additive inverse" of 3? (d) which integers are "equivalent" to 1?</p>
+<p>Do the exercise. Each section gets harder. You need to fully understand each or you'll get lost later.</p>
+<h3>Modular Arithmetic: Multiplication</h3>
+<p>How about the same modular arthmetic, but with multiplication instead of addition? Let's see..</p>
+<p>We want to do:</p>
+<pre><code>a * b = c (mod n)
+</code></pre>
+<p>Examples with our n=12 clock:</p>
+<pre><code>5 * 4 = 20 == 8 (mod 12)
+3 * 2 = 6 == 6 (mod 12)
+</code></pre>
+<p><i><u>Exercise:</u></i> Does this form a Group? Justify each required property or give a counter-example.</p>
+<p>Don't read on before completing the exercise.</p>
+<p>...</p>
+<p>...</p>
+<p>...</p>
+<p>First, it's clear that 1 must be the identity element because:</p>
+<pre><code>a * 1 = 1 * a = a (mod 12)
+</code></pre>
+<p>We need a multiplicative inverse for each element, including 0:</p>
+<pre><code>0 * a = 1
+</code></pre>
+<p>But, there's no solution! So the set <code>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}</code> is not a group using multiplication.</p>
+<p>What if we just get rid of 0 then and use the subset <code>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}</code> ?</p>
+<p>Is this a group now? Unfortunately no. Not every element has an "inverse".</p>
+<p>Consider the element <code>2</code>. We need to find some <code>x</code> such that: <code>2 * x = 1</code>.</p>
+<p><i><u>Exercise:</u></i> Try each of the numbers <code>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}</code> for x. Is there an inverse? Can
+you think of simple reason why not?</p>
+<p>So maybe modular arithmetic doesn't work? Give Up? Actually no.</p>
+<p>Modular arithmetic over multiplication works if the modulus n is <i>prime</i>. This is a direct result of
+important facts in number theory involving the greatest-common denomenator and bezout's identity.</p>
+<p>Proof (<i><u>you can skip this</i></u>):</p>
+<p>Let <code>a</code> be some number from the set. And suppose we wish to find an inverse <code>b</code> such that:</p>
+<pre><code>b * a == 1 (mod n)
+</code></pre>
+<p>We'll rearrange this expression:</p>
+<pre><code>b * a = 1 + k*n        [for some constant k: 1 + k*n == 1 (mod n) for all k]
+b * a + (-k) * n = 1   [move n to left-side]
+</code></pre>
+<p>We've acheived a form where we can use an important identity.</p>
+<p>Bezout's Identity states that given <code>x</code> and <code>y</code>, we can always solve for <code>a</code> and <code>b</code> in the equation:</p>
+<pre><code>  a*x + b*y = gcd(x, y)
+</code></pre>
+<p>So we can solve:</p>
+<pre><code>b * a + (-k) * n = gcd(a, n)
+</code></pre>
+<p>And <code>b</code> will be our desired inverse when:</p>
+<pre><code>gcd(a, n) = 1
+</code></pre>
+<p>When <code>n</code> is prime, we have <code>gcd(a, n) = 1</code> always. So we must always have a solution.</p>
+<p>The proof is complete.</p>
+<p>With this result we can satisfy our 3 group properties and conclude that modular-arithmetic over the sets
+<code>{1, 2, ..., p}</code> is always a group when <code>p</code> is prime.</p>
+<p><i><u>Exercise:</i></u> Explore n=5 modular-arithmetic over multiplication using the set {1, 2, 3, 4}: (a) draw the multiplication table (it should have 16 squares),
+(b)  draw the inverse table (it should have 4 squares)</p>
+<p><i><u>Exercise:</i></u> Explore n=4 modular-arithmetic over multiplication using the set {1, 2, 3}: (a) give a counter-example for why this is not a Group</p>
+<h3>Next Steps</h3>
+<p>You should be very comfortable with this material before moving on. If you aren't, go back and do more examples. This is a very
+cumulative subject and in each section, I will assume you've mastered the previous section.</p>
+<p>Next up, we will extend Group Theory into Field Theory.</p>
+<p>Let's <a href="finite_fields_for_fun_03.html">do it</a>.</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

@@ -54,7 +54,9 @@ a {
     /* -moz-filter: grayscale(100%); */
     /* -ms-filter: grayscale(100%); */
     /* filter: grayscale(100%); */
+    font-fmaily: Crimson, Georgia, serif
     /* font-family: "Times New Roman", Times, serif; */
-    font-family: Roboto, Open Sans, Arial, Helvetica, sans-serif;
-    /* font-family: "Lucida Console", "Courier New", monosp */ace;
+    /* font-family: "Times New Roman", Times, serif; */
+    /* font-family: Roboto, Open Sans, Arial, Helvetica, sans-serif; */
+    /* font-family: "Lucida Console", "Courier New", monosp */
 }

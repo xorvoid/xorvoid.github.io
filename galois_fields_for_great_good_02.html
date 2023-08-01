@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (02)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_01.html">previous</a></p>
+<!--
+[next](galois_fields_for_great_good_03.html)
+-->
+
+<h2>Field Theory</h2>
+<p>This is part 3 of a series on Abstract Algebra. In this part, we'll extend the idea of a Group into the idea of a Field.</p>
+<h3>Where we're going</h3>
+<p>To build a Field, we're basically going to glue two groups together. Something like gluing a car and truck together.</p>
+<p>Now, I know what you're thinking: "Hey, they tried that in 60s and it was weird..."</p>
+<p><img src="el_camino.jpg" alt="some ideas are so good you should keep them to yourself and bury them deep down inside" width="400"/></p>
+<p>I hear what you're saying, but this is not a Design By Committee blog post, okay... That ends in <a href="https://blog.codinghorror.com/the-pontiac-aztek-and-the-perils-of-design-by-committee/">weird car design also</a>.
+My blog, my rules.</p>
+<p>Our goal is to glue a Car group and and Truck group together and NOT get an El Camino.</p>
+<h3>Vehicles and Glue</h3>
+<p>We're going to combine the main two groups we discussed last time into a single unified field. We built an
+addition group and a multiplication group last time. For multiplication we need a prime-number, so we'll use
+the same <code>n = p</code> prime for each.</p>
+<p>Visually:</p>
+<table>
+<thead>
+<tr>
+<th>Vehicle Type</th>
+<th>Operation(s)</th>
+<th>Numbers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Car</td>
+<td>+</td>
+<td>0, 1, 2, 3, ..., p</td>
+</tr>
+<tr>
+<td>Truck</td>
+<td>*</td>
+<td>1, 2, 3, ..., p</td>
+</tr>
+<tr>
+<td>no el camino</td>
+<td>+, *</td>
+<td>????</td>
+</tr>
+</tbody>
+</table>
+<p>Uh oh. Big problem: Zero doesn't behave correctly in a multiplication group!</p>
+<p>We said at the beginning that finite fields are like normal math with weird numbers. In normal math, zero is also weird. So weird that it took mathematics a long time to accept it (which is another reason us computer scientists feel compelled to troll mathematicians with it).</p>
+<p>Our workaround will be the same as in normal math. Our numbers will be <code>{0, 1, 2, 3, ..., p}</code> and we'll define <code>0 * a = 0</code> for all numbers <code>a</code>. And for multiplicative inverses and division with zero.. ummm... just don't do that okay?</p>
+<p>Congratulations: We've constructed <code>GF(p)</code>!</p>
+<p>Before proceeding, I want to explain this notation. <code>GF</code> stands for <code>Galois Field</code> which is just a synonym for <code>Finite Fields</code> named after Évariste Galois who had a short-lived but fascinating life (<a href="https://en.wikipedia.org/wiki/%C3%89variste_Galois">wiki</a>). In parenthesis the "size" of the field is given. Here we have <code>p</code> numbers so we denote this field as <code>GF(p)</code>. Note: infinite-sized fields exist also (e.g. The Real Numbers), but we're only dealing with fields that have a finite amount of numbers.</p>
+<h3>Exploring <code>GF(5)</code></h3>
+<p>Let's make this more concrete by exploring <code>GF(5)</code>. First, this notation tells us there are 5 numbers in this field.
+Let's denote them as <code>{0, 1, 2, 3, 4}</code>.</p>
+<p>Addition in this field is just plain modular-arithmetic addition:</p>
+<table>
+<thead>
+<tr>
+<th>+</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>3</td>
+<td>4</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>4</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>Multiplication is similar, with the quirk about 0</p>
+<table>
+<thead>
+<tr>
+<th>*</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>0</td>
+<td>2</td>
+<td>4</td>
+<td>1</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>0</td>
+<td>4</td>
+<td>3</td>
+<td>2</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><i><u>Exercise:</u></i> Convince yourself these tables are correct. Hint: they might not be ;-)</p>
+<p><i><u>Exercise:</u></i> What's an easy method to sanity-check a multiplication table? Hint: think about what multiplicative inverses imply about uniqueness.</p>
+<p>Additive inverses:</p>
+<table>
+<thead>
+<tr>
+<th>inv(+)</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>Multiplicative inverses:</p>
+<table>
+<thead>
+<tr>
+<th>inv(*)</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>BAD</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p>Finally, let's demonstrate an important property of a field.</p>
+<p>Consider <code>4*(2+1)</code> and <code>(4*2) + (4*1)</code>. Are these equal?</p>
+<pre><code>4*(2+1) = 4*3 = 2
+(4*2) + (4*1) = 3 + 4 = 2
+</code></pre>
+<p>Yes! Does this work in general? Also, yes.</p>
+<p>The distributive property holds for fields:</p>
+<pre><code>a * (b + c) = a*b + a*c
+(a + b) * c = a*c + b*c
+</code></pre>
+<p><i><u>Exercise:</u></i> Try more examples. Try some complicated expression. Get a feel for using <code>GF(5)</code>. It should "just work".</p>
+<p><i><u>Exercise:</u></i> Explore <code>GF(2)</code>. Does it still work? What common computer operation is addition?  What common computer operation is multiplication?</p>
+<p><i><u>Exercise:</u></i> Does <code>GF(4)</code> work if you construct it the same way as above? Why or why not?</p>
+<h3>Definition</h3>
+<p>We're now ready to be math lawyers and go all definitional.</p>
+<p>A <i>Field</i> is defined as two operations (<code>+</code> and <code>*</code>) defined over a set of <code>"numbers"</code> which follow these rules:</p>
+<ol>
+<li>Associativity: <code>(a + b) + c = a + (b + c), (a * b) * c = a * (b * c)</code></li>
+<li>Commutativity: <code>a + b = b + a, a * b = b * a</code></li>
+<li>Identity: An additive identity (<code>0</code>) and a multiplicative identity (<code>1</code>) where: <code>a + 0 = a, a * 1 = a</code></li>
+<li>Additive inverses: for each <code>a</code>  there is some <code>b</code> such that <code>a + b = 0</code></li>
+<li>Multiplicative inverses: for each <code>a != 0</code>  there is some <code>b</code> such that <code>a * b = 1</code></li>
+<li>Distributivity: <code>a * (b + c) = (a * b) + (a * c)</code></li>
+</ol>
+<p>And that's it. You now know what a field is.</p>
+<p>This is effectively just formalizing up what is usual and common in the Real Numbers. This is why I say "it just works".</p>
+<p>I need to however say one note on "commutativity". Our definition of groups did not require commutativity. This is common in
+group definitions. But the addition and multiplication groups used in a field DO need commutativity. The modular arithmetic
+groups are indeed commutative so this is no problem. Since our focus is finite fields and not groups, we won't see any
+non-commutative groups. If you're curious though, they're not hard to find:
+<a href="https://en.wikipedia.org/wiki/Permutation_group">permutation groups</a> or
+<a href="https://en.wikipedia.org/wiki/General_linear_group">Matrix Multiplication Group GL(n,R)</a></p>
+<p>Finally, the definition of Field is very general and says nothing about the size. We can have infinite sized Fields. For example, the Real Numbers are a Field. The Rational Numbers are also a field.</p>
+<p><i><u>Exercise:</u></i> Are the infinite set of integers <code>{..., -2, -1, 0, 1, 2, ...}</code> a Field using normal addition and multiplication? Why or why not?</p>
+<p><i><u>Exercise:</u></i> (Tricky) Find GF(4). Hint: let <code>a + a = 0</code> always. Then use the properties of a field to deduce the rest of the addition and multiplication tables. Check that all properties are satisfied.</p>
+<h3>The Lonely Misfits</h3>
+<p>We're skipping a very large amount of the standard Abstract Algebra treatment in this series. We're just plucking out the parts
+that are directly useful to finite-fields. There is a very large and interesting landscape of algebraic structures. These
+structures strengthen or weaken the various required properties. Most notably I'm skipping Rings. As an example, the integers with normal addtion and
+multiplication form a Ring. Here's an outline of various algebraic structures if you're curious: <a href="https://en.wikipedia.org/wiki/Outline_of_algebraic_structures">link</a></p>
+<h3>Next Steps</h3>
+<p>You should be very comfortable with this material before moving on. If you aren't, go back and do more examples. This is a very
+cumulative subject and in each section, I will assume you've mastered the previous section.</p>
+<p>If you follow everything so far, congrats. You're rockin' math: Time to <a href="https://www.youtube.com/watch?v=3GwjfUFyY6M">Celebrate</a>!</p>
+<p>Next up, we'll finally begin coding, starting with a <code>GF(p)</code> implementation!</p>
+<!--
+[Coding Time!](galois_fields_for_great_good_03.html)
+-->
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

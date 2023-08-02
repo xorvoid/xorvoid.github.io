@@ -32,7 +32,7 @@
 -->
 
 <h2>Field Theory</h2>
-<p>This is part 3 of a series on Abstract Algebra. In this part, we'll extend the idea of a Group into the idea of a Field.</p>
+<p>This is part 2 of a series on Abstract Algebra. In this part, we'll extend the idea of a Group into the idea of a Field.</p>
 <h3>Where we're going</h3>
 <p>To build a Field, we're basically going to glue two groups together. Something like gluing a car and truck together.</p>
 <p>Now, I know what you're thinking: "Hey, they tried that in 60s and it was weird..."</p>
@@ -57,12 +57,12 @@ the same <code>n = p</code> prime for each.</p>
 <tr>
 <td>Car</td>
 <td>+</td>
-<td>0, 1, 2, 3, ..., p</td>
+<td>0, 1, 2, 3, ..., p-1</td>
 </tr>
 <tr>
 <td>Truck</td>
 <td>*</td>
-<td>1, 2, 3, ..., p</td>
+<td>1, 2, 3, ..., p-1</td>
 </tr>
 <tr>
 <td>no el camino</td>
@@ -73,7 +73,7 @@ the same <code>n = p</code> prime for each.</p>
 </table>
 <p>Uh oh. Big problem: Zero doesn't behave correctly in a multiplication group!</p>
 <p>We said at the beginning that finite fields are like normal math with weird numbers. In normal math, zero is also weird. So weird that it took mathematics a long time to accept it (which is another reason us computer scientists feel compelled to troll mathematicians with it).</p>
-<p>Our workaround will be the same as in normal math. Our numbers will be <code>{0, 1, 2, 3, ..., p}</code> and we'll define <code>0 * a = 0</code> for all numbers <code>a</code>. And for multiplicative inverses and division with zero.. ummm... just don't do that okay?</p>
+<p>Our workaround will be the same as in normal math. Our numbers will be <code>{0, 1, 2, 3, ..., p-1}</code> and we'll define <code>0 * a = 0</code> for all numbers <code>a</code>. And for multiplicative inverses and division with zero.. ummm... just don't do that okay?</p>
 <p>Congratulations: We've constructed <code>GF(p)</code>!</p>
 <p>Before proceeding, I want to explain this notation. <code>GF</code> stands for <code>Galois Field</code> which is just a synonym for <code>Finite Fields</code> named after Évariste Galois who had a short-lived but fascinating life (<a href="https://en.wikipedia.org/wiki/%C3%89variste_Galois">wiki</a>). In parenthesis the "size" of the field is given. Here we have <code>p</code> numbers so we denote this field as <code>GF(p)</code>. Note: infinite-sized fields exist also (e.g. The Real Numbers), but we're only dealing with fields that have a finite amount of numbers.</p>
 <h3>Exploring <code>GF(5)</code></h3>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (03)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_02.html">previous</a></p>
+<!--
+[next](galois_fields_for_great_good_04.html)
+-->
+
+<h2>Implementing GF(p)</h2>
+<p>This is part 3 of a series on Abstract Algebra. In this part, we'll implement the GF(p) fields we discussed last time.</p>
+<h3>Source Code: <a href="https://github.com/xorvoid/finite_fields_for_fun"><code>src/gf_p.rs</code></a></h3>
+<h4>An implementation of GF(p) where p is a prime number</h4>
+<p>We will implement addition, subtraction, multiplication, and division using
+operator-overloading so we can use the normal operators: +, -, *, /</p>
+<pre><code class="language-rust">use std::ops::{Add, Mul, Sub, Div};
+</code></pre>
+<p>Rust supports <a href="https://practice.rs/generics-traits/const-generics.html">Const Generics</a>,
+but that adds a lot of extra syntax noise which may be distracting for readers without
+a background in Rust or C++.</p>
+<p>Instead, we'll just define a simple constant. If you'd like to explore a <code>GF(p)</code> field for a
+different prime, just change the number below. You are responsible for ensuring that the number is actually
+prime. By default, we'll use <code>GF(5)</code>:</p>
+<pre><code class="language-rust">pub const P: u8 = 5;
+</code></pre>
+<p>The type we use to represent a number in <code>GF(p)</code> is just an unsigned 8-bit integer (<code>u8</code>).
+This design will allow for prime fields up to size <code>251</code> (the largest prime that fits
+in 8-bits). We will also tell Rust that its okay to copy (<code>Clone</code> &amp; <code>Copy</code>) and to compare
+by two numbers via equality (<code>PartialEq</code>)</p>
+<pre><code class="language-rust">#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GF(u8);
+</code></pre>
+<p>Constructing a new number is <code>GF(p)</code> is easy: we just need to ensure it's within
+the set <code>{0, 1, ..., p-1}</code></p>
+<pre><code class="language-rust">impl GF {
+  pub fn new(val: u8) -&gt; GF {
+    assert!(val &lt; P);
+    GF(val)
+  }
+  pub fn value(&amp;self) -&gt; u8 {
+    self.0
+  }
+}
+</code></pre>
+<h4>Addition and Subtraction</h4>
+<p>Now we implement addition via simple modular arithmetic: <code>(a + b) % p</code>.
+But we need to take care to avoid 8-bit overflow, so we do the math in
+16-bit (<code>u16</code>) and then apply the modulus operation.</p>
+<pre><code class="language-rust">impl Add&lt;GF&gt; for GF {
+  type Output = GF;
+  fn add(self, rhs: GF) -&gt; GF {
+    let a = self.0 as u16;
+    let b = rhs.0 as u16;
+    let p = P as u16;
+    GF::new(((a + b) % p) as u8)
+  }
+}
+</code></pre>
+<p>Negation (or additive-inverse) is fairly straight-forward also.</p>
+<p>Given <code>a</code>, we want to solve for <code>neg(a)</code> in:</p>
+<p><code>a + neg(a) == 0 (mod p)</code></p>
+<p>It seems like the answer would be:</p>
+<p><code>neg(a) = p - a</code></p>
+<p>But if <code>a == 0</code>, then we'd compute <code>neg(a) = p</code> which is not a valid number.</p>
+<p>This has an easy fix though:</p>
+<p><code>neg(a) = (p - a) % p</code></p>
+<pre><code class="language-rust">impl GF {
+  pub fn negate(self) -&gt; GF {
+    GF::new((P - self.0) % P)
+  }
+}
+</code></pre>
+<p>Now, we can easily implement subtraction in terms of addition and negation
+since: <code>a - b = a + (-b)</code></p>
+<pre><code class="language-rust">impl Sub&lt;GF&gt; for GF {
+  type Output = GF;
+  fn sub(self, rhs: GF) -&gt; GF {
+    self + rhs.negate()
+  }
+}
+</code></pre>
+<h4>Multiplication and Division</h4>
+<p>Now we implement multiplication via simple modular arithmetic: <code>(a * b) % p</code>.
+But we need to take care to avoid 8-bit overflow, so we do the math in
+16-bit (<code>u16</code>) and then apply the modulus operation.</p>
+<pre><code class="language-rust">impl Mul&lt;GF&gt; for GF {
+  type Output = GF;
+  fn mul(self, rhs: GF) -&gt; GF {
+    let a = self.0 as u16;
+    let b = rhs.0 as u16;
+    let p = P as u16;
+    GF::new(((a * b) % p) as u8)
+  }
+}
+</code></pre>
+<p>Multiplicative inverses are the trickiest operation in this field. We will
+implement them by brute force. If we've constructed a proper field, then each
+number will have an inverse. If we try all numbers, one will succeed.</p>
+<p>Notice the <code>Result&lt;&gt;</code> type here. This is Rust's way of returning errors. We need to
+use a <code>Result&lt;&gt;</code> here since the number 0 has no inverse and need to communicate that
+the operation has failed.</p>
+<p>Faster approaches exist (e.g. <a href="https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm">The Extended Euclidean Algorithm</a>), but for
+a first implementation we will avoid adding that complexity. We'll discuss faster
+methods in later sections.</p>
+<pre><code class="language-rust">impl GF {
+  pub fn invert(self) -&gt; Result&lt;GF, String&gt; {
+    // Important: Zero has no inverse, it's invalid
+    if self.0 == 0 {
+      return Err(&quot;Zero has no inverse&quot;.to_string());
+    }
+    // Scan the numbers {1, 2, ..., P-1} until we find the inverse
+    for x in 1..P {
+      let candidate = GF::new(x);
+      if self * candidate == GF::new(1) {
+        return Ok(candidate); // Found!
+      }
+    }
+    unreachable!(&quot;Every non-zero number has an inverse&quot;);
+  }
+}
+</code></pre>
+<p>Similarly to subtraction, we can implement division in terms of multiplication
+and inversion since: <code>a / b = a * inv(b)</code></p>
+<p>Notice again that we use a <code>Result&lt;&gt;</code> to communicate that division by zero will fail</p>
+<pre><code class="language-rust">impl Div&lt;GF&gt; for GF {
+  type Output = Result&lt;GF, String&gt;;
+  fn div(self, rhs: Self) -&gt; Result&lt;GF, String&gt; {
+    // Important: Cannot divide by zero
+    if rhs.0 == 0 {
+      return Err(&quot;Cannot divide by zero&quot;.to_string());
+    }
+    Ok(self * rhs.invert().unwrap())
+  }
+}
+</code></pre>
+<h4>Some final things</h4>
+<p>Rust as a language doesn't implicitly assume much about new types so we have to explicitly
+tell it how to do a few more-or-less trivial things.</p>
+<p>We need to tell Rust how to print these new numbers to the screen.
+We will just print them out as ordinary integers.</p>
+<pre><code class="language-rust">impl std::fmt::Display for GF {
+  fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter) -&gt; std::fmt::Result {
+    write!(f, &quot;{}&quot;, self.0)
+  }
+}
+</code></pre>
+<p>And, we need to tell Rust how to convert strings into our field's numbers.</p>
+<pre><code class="language-rust">impl std::str::FromStr for GF {
+  type Err = String;
+  fn from_str(s: &amp;str) -&gt; Result&lt;GF, String&gt; {
+    let num: u8 = s.parse().map_err(|_| format!(&quot;Not an 8-bit integer&quot;))?;
+    // Return an error if the number is too big for the field
+    if num &gt;= P {
+      return Err(format!(&quot;Number too large, got {}, but limit is {}&quot;, num, P-1));
+    }
+    Ok(GF::new(num))
+  }
+}
+</code></pre>
+<p>Finally, we'll tell rust that that our implementation can be treated as a Field in any
+code that is written for Fields! This will come in handy for our calculator.</p>
+<pre><code class="language-rust">impl crate::field::Field for GF {
+  fn number_of_elements() -&gt; usize {
+    P as usize
+  }
+}
+</code></pre>
+<h4>Testing Time</h4>
+<p>Note that these tests assume <code>GF(5)</code>. If you change the size of the field, they are not expected to pass.</p>
+<pre><code class="language-rust">#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // TEST: We shouldn't be able to construct numbers out of the range
+  #[should_panic]
+  #[test]
+  fn test_invalid_numbers() {
+    GF::new(5);
+  }
+
+  // TEST: Addition
+  #[test]
+  fn test_add() {
+    // GF(5) | 0 + 1 = 1
+    assert_eq!(GF::new(0) + GF::new(1), GF::new(1));
+    // GF(5) | 1 + 1 = 2
+    assert_eq!(GF::new(1) + GF::new(1), GF::new(2));
+    // GF(5) | 1 + 2 = 3
+    assert_eq!(GF::new(1) + GF::new(2), GF::new(3));
+    // GF(5) | 2 + 2 = 4
+    assert_eq!(GF::new(2) + GF::new(2), GF::new(4));
+    // GF(5) | 1 + 3 = 4
+    assert_eq!(GF::new(1) + GF::new(3), GF::new(4));
+    // GF(5) | 2 + 3 = 0
+    assert_eq!(GF::new(2) + GF::new(3), GF::new(0));
+    // GF(5) | 3 + 3 = 1
+    assert_eq!(GF::new(3) + GF::new(3), GF::new(1));
+    // GF(5) | 2 + 4 = 1
+    assert_eq!(GF::new(2) + GF::new(4), GF::new(1));
+    // GF(5) | 4 + 4 = 3
+    assert_eq!(GF::new(4) + GF::new(4), GF::new(3));
+  }
+
+  // TEST: Subtraction
+  #[test]
+  fn test_sub() {
+    // GF(5) | 1 - 0 = 1
+    assert_eq!(GF::new(1) - GF::new(0), GF::new(1));
+    // GF(5) | 0 - 1 = 4
+    assert_eq!(GF::new(0) - GF::new(1), GF::new(4));
+    // GF(5) | 1 - 1 = 0
+    assert_eq!(GF::new(1) - GF::new(1), GF::new(0));
+    // GF(5) | 1 - 2 = 4
+    assert_eq!(GF::new(1) - GF::new(2), GF::new(4));
+    // GF(5) | 2 - 2 = 0
+    assert_eq!(GF::new(2) - GF::new(2), GF::new(0));
+    // GF(5) | 1 - 3 = 3
+    assert_eq!(GF::new(1) - GF::new(3), GF::new(3));
+    // GF(5) | 2 - 3 = 4
+    assert_eq!(GF::new(2) - GF::new(3), GF::new(4));
+    // GF(5) | 3 - 3 = 0
+    assert_eq!(GF::new(3) - GF::new(3), GF::new(0));
+    // GF(5) | 2 - 4 = 3
+    assert_eq!(GF::new(2) - GF::new(4), GF::new(3));
+    // GF(5) | 4 - 4 = 0
+    assert_eq!(GF::new(4) - GF::new(4), GF::new(0));
+  }
+
+  // TEST: Multiplication
+  #[test]
+  fn test_mul() {
+    // GF(5) | 0 * 1 = 0
+    assert_eq!(GF::new(0) * GF::new(1), GF::new(0));
+    // GF(5) | 0 * 2 = 0
+    assert_eq!(GF::new(0) * GF::new(2), GF::new(0));
+    // GF(5) | 1 * 1 = 1
+    assert_eq!(GF::new(1) * GF::new(1), GF::new(1));
+    // GF(5) | 1 * 2 = 2
+    assert_eq!(GF::new(1) * GF::new(2), GF::new(2));
+    // GF(5) | 2 * 2 = 4
+    assert_eq!(GF::new(2) * GF::new(2), GF::new(4));
+    // GF(5) | 2 * 3 = 1
+    assert_eq!(GF::new(2) * GF::new(3), GF::new(1));
+    // GF(5) | 3 * 3 = 4
+    assert_eq!(GF::new(3) * GF::new(3), GF::new(4));
+    // GF(5) | 2 * 4 = 3
+    assert_eq!(GF::new(2) * GF::new(4), GF::new(3));
+    // GF(5) | 3 * 4 = 2
+    assert_eq!(GF::new(3) * GF::new(4), GF::new(2));
+    // GF(5) | 4 * 4 = 1
+    assert_eq!(GF::new(4) * GF::new(4), GF::new(1));
+  }
+
+
+  // TEST: Division
+  #[test]
+  fn test_div() {
+    // GF(5) | 0 / 1 = 0
+    assert_eq!(GF::new(0) / GF::new(1), Ok(GF::new(0)));
+    // GF(5) | 0 / 2 = 0
+    assert_eq!(GF::new(0) / GF::new(2), Ok(GF::new(0)));
+    // GF(5) | 1 / 0 = ERROR
+    assert!(matches!(GF::new(1) / GF::new(0), Err(_)));
+    // GF(5) | 2 / 0 = ERROR
+    assert!(matches!(GF::new(2) / GF::new(0), Err(_)));
+    // GF(5) | 1 / 1 = 1
+    assert_eq!(GF::new(1) / GF::new(1), Ok(GF::new(1)));
+    // GF(5) | 1 / 2 = 3
+    assert_eq!(GF::new(1) / GF::new(2), Ok(GF::new(3)));
+    // GF(5) | 2 / 2 = 1
+    assert_eq!(GF::new(2) / GF::new(2), Ok(GF::new(1)));
+    // GF(5) | 2 / 3 = 4
+    assert_eq!(GF::new(2) / GF::new(3), Ok(GF::new(4)));
+    // GF(5) | 3 / 3 = 1
+    assert_eq!(GF::new(3) / GF::new(3), Ok(GF::new(1)));
+    // GF(5) | 2 / 4 = 3
+    assert_eq!(GF::new(2) / GF::new(4), Ok(GF::new(3)));
+    // GF(5) | 3 / 4 = 2
+    assert_eq!(GF::new(3) / GF::new(4), Ok(GF::new(2)));
+    // GF(5) | 4 / 4 = 1
+    assert_eq!(GF::new(4) / GF::new(4), Ok(GF::new(1)));
+  }
+}
+</code></pre>
+<h3>Building and Testing</h3>
+<p>The above code can be built and tested the normal rust ways:</p>
+<pre><code>cargo test
+cargo build
+</code></pre>
+<h3>A <code>GF(p)</code> Calculator</h3>
+<p>Finally, we provide a little interactive calculator to explore these <code>GF(p)</code> fields. The calculator implementation is
+out of the scope for this series and uses more advanced Rust features so we won't explain it. If you're interested in
+this kind of thing, go read about <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser">Recursive Descent Parsers</a>,
+and check out my other work on compilers (<a href="sectorc.html">here</a> and <a href="otcc_deobfuscated.html">here</a>).</p>
+<p>The calculator looks like:</p>
+<pre><code class="language-shell">$ cargo build &amp;&amp; ./target/debug/gf_p_calc
+================================================================================
+A Calculator for GF(5)
+================================================================================
+
+Addition Table:
+
+   +  |   0    1    2    3    4  
+--------------------------------
+   0  |   0    1    2    3    4  
+   1  |   1    2    3    4    0  
+   2  |   2    3    4    0    1  
+   3  |   3    4    0    1    2  
+   4  |   4    0    1    2    3  
+
+Subtraction Table:
+
+   -  |   0    1    2    3    4  
+--------------------------------
+   0  |   0    4    3    2    1  
+   1  |   1    0    4    3    2  
+   2  |   2    1    0    4    3  
+   3  |   3    2    1    0    4  
+   4  |   4    3    2    1    0  
+
+Multiplication Table:
+
+   *  |   0    1    2    3    4  
+--------------------------------
+   0  |   0    0    0    0    0  
+   1  |   0    1    2    3    4  
+   2  |   0    2    4    1    3  
+   3  |   0    3    1    4    2  
+   4  |   0    4    3    2    1  
+
+Division Table:
+
+   /  |   0    1    2    3    4  
+--------------------------------
+   0  |   -    0    0    0    0  
+   1  |   -    1    3    2    4  
+   2  |   -    2    1    4    3  
+   3  |   -    3    4    1    2  
+   4  |   -    4    2    3    1  
+
+Enter any expression for evaluation (e.g. (1 + 2) * 4)
+
+&gt; 2 + 4
+1
+&gt; 2 * 4
+3
+&gt; 2*(1 + 3)
+3
+&gt; 2*1 + 2*3
+3
+&gt; 
+</code></pre>
+<p><i><u>Exercise:</u></i> Play around with the calculator. Change <code>P</code> to a different prime and explore that field too.</p>
+<p><i><u>Exercise:</u></i> Do your own implementation of <code>GF(p)</code> fields in your preferred programming language.</p>
+<h3>Next Up</h3>
+<p>Hopefully this section helps put a lot of pieces together.</p>
+<p>Is it a little weird that <code>2*4 = 3</code>? Maybe.</p>
+<p>But that's why I say that the numbers are weird but everything just works like normal.
+It's a Field because it behaves like a Field. And, that's all we care about in Abstract Algebra.</p>
+<p>The work we've done so far is already quite useful, but for computing, this restriction to prime numbers is awkward.
+We really want fields like <code>GF(4)</code>, <code>GF(16)</code>, <code>GF(64)</code>, <code>GF(256)</code>, etc that map well to the binary numbers implemented
+by transistors on a piece of silicon.</p>
+<p>To do this we'll need more abstraction and get reacquainted with an old friend: <i>Polynomials</i></p>
+<p>Let's get curvy. (soon)</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

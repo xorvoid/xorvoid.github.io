@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (04)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_03.html">previous</a> |</p>
+<!--
+[next](galois_fields_for_great_good_05.html)
+-->
+
+<h2>Polynomial Arithmetic</h2>
+<p>This is part 4 of a series on Abstract Algebra. In this part, we'll give a refresher on polynomial arithmetic: addition, subtraction, multiplication, and division. The fact that we can define these four operations over polynomials should give you a very
+big hint about where we are going. 😉</p>
+<h3>Polynomials</h3>
+<p>An nth-order polynomial is any expression of the form where <code>c_n != 0</code>:</p>
+<pre><code>c_n * x^n + c_{n-1} * x^(n-1) + ... + c_2 * x^2 + c_1 * x + c_0
+</code></pre>
+<p>In particular, these are all 4th-order polynomials:</p>
+<pre><code>2x^4 + x^3 + 10x + 7
+x^4 + 3x^2 + 4x
+3x^4 + 1
+x^4
+</code></pre>
+<p>These are not 4th-order polynomials:</p>
+<pre><code>x^3              [3rd-order]
+2x^2 + 1         [2nd-order]
+3x^5 + x^4       [5th-order]
+</code></pre>
+<h3>Polynomial Arithmetic</h3>
+<p>Our goal is to add, subtract, multiply and divide polynomials. To be clear, we aren't doing these operations over normal
+numbers but the polynomials themselves. We don't care about one particular <code>x=k</code>. We care about all x's. The polynomial itself
+is the "weird number".</p>
+<p>In other words, we want to add/multiply <i>the entire graph of points</i>.</p>
+<p>Consider these:</p>
+<p><img src=polynomial_arithmetic.png /></p>
+<p>Hopefully that helps!</p>
+<h3>Addition and Subtraction</h3>
+<p>Adding polynomials is straight-forward. Just group like-terms and add the coefficients:</p>
+<pre><code>(2x^3 + 3) + (x^3 + 3x^2 + 6)
+(2x^3 + x^3) + (3x^2 + 0x^2) + (3 + 6)
+3x^3 + 3x^2 + 9
+</code></pre>
+<p>It's also easy to negate a polynomial:</p>
+<pre><code>-(x^3 + 3x^2 + 6) = -x^3 - 3x^2 - 6
+</code></pre>
+<p>So, we have subtraction easily:</p>
+<pre><code>(2x^3 + 3) - (x^3 + 3x^2 + 6)
+(2x^3 + 3) + -(x^3 + 3x^2 + 6)
+(2x^3 + 3) + (-x^3 - 3x^2 - 6)
+(2x^3 - x^3) + (3x^2 - 0x^2) + (3 - 6)
+(2 - 1)x^3 + (3 - 0)x^2 + (3 - 6)
+x^3 + 3x^2 - 3
+</code></pre>
+<p>Naturally a negation is an <i>additive-inverse</i>:</p>
+<pre><code>x^3 + 3x^2 + 6 + -(x^3 + 3x^2 + 6)
+(1 - 1)x^3 + (3 - 3)x^2 + (6 - 6)
+(0)x^3 + (0)x^2 + (0)
+0
+</code></pre>
+<p>Generalizing, for addition we can simply add coefficients. For the polynomials <code>A</code>, <code>B</code>
+with coefficients <code>a_i</code> and <code>b_i</code>:</p>
+<pre><code>A = a_n * x^n + a_{n-1} * x^(n-1) + ... + a_2 * x^2 + a_1 * x + a_0
+B = b_n * x^n + b_{n-1} * x^(n-1) + ... + b_2 * x^2 + b_1 * x + b_0
+</code></pre>
+<p>The polynomial <code>C = A + B</code> has coefficients <code>c_i = (a_i + b_i)</code>:</p>
+<pre><code>C = A + B = (a_n + b_n) * x^n + (a_{n-1} + b_{n-1}) * x^(n-1) + ... + (a_2 + b_2) * x^2 + (a_1 + b_2) * x + (a_0 + b_0)
+C = A + B = c_n * x^n + c_{n-1} * x^(n-1) + ... + c_2 * x^2 + c_1 * x + c_0
+</code></pre>
+<p><i><u>Exercise:</u></i> Compute <code>(x^4 + 1) + (3x^4 + x^2)</code></p>
+<p><i><u>Exercise:</u></i> Compute <code>(5) + (x^2 - 4)</code></p>
+<p><i><u>Exercise:</u></i> Compute <code>(-x^2 + 3) - (-x^2 + 3)</code></p>
+<h3>Vector Notation</h3>
+<p>Since working with polynomials in the standard notation is verbose and tedious, we'll occasionally adopt
+various alternative notations or representations. Often if you read about some application of Galois Fields, the
+author will assume you are familiar with these alternative representations and will switch between them intuitively.
+This can be a big source of confusion. Let's clear it up by being explicit.</p>
+<p>Here we introduce <i>Vector Notation</i>.</p>
+<p>Instead of writing the verbose polynomial:</p>
+<pre><code>x^3 + 3x^2 + 6
+</code></pre>
+<p>We will write a row-vector containing only the coefficients:</p>
+<pre><code>[1, 3, 0, 6]
+</code></pre>
+<p>We can see that this is a valid representation by performing a <a href="https://en.wikipedia.org/wiki/Dot_product">dot-product</a> with the
+<i><a href="https://en.wikipedia.org/wiki/Monomial_basis">monomial basis vector</a></i>:</p>
+<pre><code>[1, 3, 0, 6] dot [x^3, x^2, x, 1] = x^3 + 3x^2 + 6
+</code></pre>
+<p>With this representation, our first addition above becomes a simple vector addition:</p>
+<pre><code>[2, 0, 0, 3] + [1, 3, 0, 6]
+[3, 3, 0, 9]
+</code></pre>
+<p>Much better!</p>
+<p><i><u>Exercise:</u></i> Convert <code>x^4 + 1</code> to vector notation</p>
+<p><i><u>Exercise:</u></i> Convert <code>3x^4 + x^2</code> to vector notation</p>
+<p><i><u>Exercise:</u></i> Sum the previous two answers (vectors) and convert to polynomial representation. This should be the same as your answer to
+<code>(x^4 + 1) + (3x^4 + x^2)</code></p>
+<h3>Multiplication</h3>
+<p>We now want to multiply polynomials. Let's start with a simple two-term binomial multiply:</p>
+<pre><code>(2x + 3) * (3x + 1)
+(2x * 3x) + (2x * 1) + (3 * 3x) + (3 * 1)
+6x^2 + 2x + 9x + 3
+6x^2 + (2+9)x + 3
+6x^2 + 11x + 3
+</code></pre>
+<p>Here for the binomial case, we can just use the familiar <a href="https://en.wikipedia.org/wiki/FOIL_method">FOIL method</a>.
+But for larger order polynomials, it gets more complicated:</p>
+<pre><code>(2x^2 + x + 3) * (3x^2 + 4x + 1)
+(2x^2 * 3x^2) + (2x^2 * 4x) + (2x^2 * 1) + (x * 3x^2) + (x * 4x) + (x * 1) + (3 * 3x^2) + (3 * 4x) + (3 * 1)
+6x^4 + 8x^3 + 2x^2 + 3x^3 + 4x^2 + x + 9x^2 + 12x + 3
+6x^4 + 11x^3 + 15x^2 + 13x + 3
+</code></pre>
+<p>Consider a 5th order polynomial. There are 6 different multiplications that will produce an x^5 term:</p>
+<pre><code>1   * x^5 = x^5
+x   * x^4 = x^5
+x^2 * x^3 = x^5
+x^3 * x^2 = x^5
+x^4 * x   = x^5
+x^5 * 1   = x^5
+</code></pre>
+<p>This gets worse as the order increases. Notice that a 100th-order polynomial will have 101 terms contributing
+to it's resulting <code>x^100</code> term!</p>
+<p>Further, notice that the order of the polynomial increases as a result of a multiplication.</p>
+<p>From our simple example
+above:</p>
+<pre><code>(1st order) * (1st order) = (2nd order)
+</code></pre>
+<p>And for the 5th order, we'd have one term where <code>ax^5 * bx^5 = (a*b)x^10</code>, so:</p>
+<pre><code>(5th order) * (5th order) = (10th order)
+</code></pre>
+<p>A 100th-order polynomial multiplied by another 100th-order polynomial will result in a 200th-other polynomial!</p>
+<p><i><u>Exercise:</u></i> Compute <code>(x^4 + 2x) * (3x^2 + x + 4)</code>. What is the order of the result? How many terms contribute to
+the resulting x^2 term?</p>
+<h3>Multiplication is a Convolution</h3>
+<p>Hopefully, its clear now that multiplication is not a simple sum of coefficients. Instead its a sum of many smaller multiplications. This operation
+appears in enough contexts in mathematics that it has a well-known name: <i>A Convolution</i>.</p>
+<p>We are doing the following:</p>
+<pre><code>(2x + 3) * (3x + 1)
+[2, 3] * [3, 1]                        [change to vector notation]
+convolve([2, 3], [3, 1])               [multiplication is a convolution]
+[6, 11, 3]                             [compute the convolution of two row vectors]
+6x^2 + 11x + 3                         [change back to polynomial notation]
+</code></pre>
+<p><i><u>Exercise:</u></i> Check the multiplication above using the ordinary term-by-term, non-convolution approach.</p>
+<p>In interest of time, I'm not going to dig deeper into the convolution in this post. However, it's important to recognize this
+structure for further optimizations. In particular, the convolution can be transformed into a simpler problem (that does behave more like
+combining like terms) by using a Fast Fourier Transform (FFT). We may cover this in a future article.</p>
+<p>Luckily, if your goal is to just understand and use Galois Fields, this can just be viewed as an implementation optimization. One doesn't need to understand the connection to Convolution and FFT in order to appreciate and utilize these Fields.</p>
+<p>But, if you're a curious cat, a well-known math YouTuber made a nice video on the subject (<a href="https://www.youtube.com/watch?v=KuXjwB4LzSA">here</a>). Highly recommended 👍</p>
+<h3>Division</h3>
+<p>We've already seen one case where division works. We can just reframe our multiplication above:</p>
+<pre><code>(6x^2 + 11x + 3) / (2x + 3) = (3x + 1)
+</code></pre>
+<p>However, not all division will work, consider:</p>
+<pre><code>(2x + 4) / (2x + 3) = 1 + ?
+</code></pre>
+<p>This is analogous to normal integer division having remainders:</p>
+<pre><code>7 / 2 = 3 remainder 2                    [NOTE: 3*2 + 2 = 7]
+</code></pre>
+<p>So we do the same with polynomials:</p>
+<pre><code>(2x + 4) / (2x + 3) = 1 remainder 1      [NOTE: 1 * (2x +  3) + 1 = 2x + 4]
+</code></pre>
+<p>This is known as long-division of polynomials. It works exactly like long-division of the natural numbers,
+it's just more verbose:</p>
+<pre><code>                    2x^3 + -3x^2 + 6.5x - 15.5  R 60
+          -----------------------------------------
+(2x + 4) |   4x^4 + 2x^3 + x^2 + -5x - 2
+           -(4x^4 + 8x^3)
+             -----------
+                   -6x^3 +  x^2 + -5x - 2
+                 -(-6x^3 -12x^2)
+                   ------------
+                          13x^2 + -5x - 2
+                        -(13x^2 + 26x)
+                          -----------
+                                 -31x - 2
+                               -(-31x - 62)
+                                 ---------
+                                        60 (remainder)
+</code></pre>
+<p>Checking:</p>
+<pre><code>(2x + 4) * (2x^3 + -3x^2 + 6.5x - 15.5) + 60
+(4x^4) + (8x^3 + -6x^3) + (-12x^2 + 13x^2) + (26x - 31x) + (-62) + 60
+4x^4 + 2x^3 + x^2 + -5x - 2
+
+</code></pre>
+<p>Long-division of polynomials is tedious, verbose, and error-prone. You don't have to be an expert at it, but you
+should be familiar enough to know that division of polynomials isn't magic. It's just rote calculation.</p>
+<p>Here are some additional resources to help you attain mastery:</p>
+<ul>
+<li><a href="https://www.khanacademy.org/math/algebra2/x2ec2f6f830c9fb89:poly-div/x2ec2f6f830c9fb89:quad-div-by-linear/v/polynomial-division">Kahn Academy</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Polynomial_long_division">Wikipedia</a></li>
+</ul>
+<h3>Multiplicative-inverses</h3>
+<p>When we introduced the concept of a field, we observed that addition and multiplication were the only two operators we needed to consider
+given that we had access to additive-inverses and multiplicative-inverses.</p>
+<p>We established above that additive-inverses are straightforward, but what about multiplicative-inverses? Sadly no.</p>
+<p>Suppose we wanted the inverse of <code>A = 2x + 1</code>:</p>
+<pre><code>A * inv(A) = 1
+(2x + 1) * inv(A) = 1
+inv(A) = 1 / (2x + 1)
+inv(A) = 0 rem 1
+</code></pre>
+<p>Uh oh!</p>
+<p>The only polynomial that works is 1 since 1/1 = 1. This is a big problem and it means that our polynomials are NOT a Field!
+Disaster, right?</p>
+<p>It turns out we can patch this up in the same sort of way we made modular arithmetic work with integers. But that's for next time.</p>
+<p>Same bat time, same bat channel.</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

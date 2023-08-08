@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (05)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_04.html">previous</a> |</p>
+<!--
+[next](galois_fields_for_great_good_06.html)
+-->
+
+<h2>Polynomial Fields GF(p^k)</h2>
+<p>This is part 5 of a series on Abstract Algebra. In the last part, we discussed arithmetic over polynomials. This time we'll show how
+we can use polynomials to construct more finite fields. This is the hardest required section of the series.
+We will use a lot of abstraction. You may need to read it a few times and do extra exercises.
+But, after mastering this section, you will be well-prepared to understand and implement real applications such as AES Encryption!</p>
+<h3>Coefficients from an arbitrary Field</h3>
+<p>As we discussed previously, addition and multiplication of polynomials are operations upon the coefficients.</p>
+<p>In particular:</p>
+<table>
+<thead>
+<tr>
+<th>Operation on Polynomials: A, B</th>
+<th>Operation on the Coefficients: a_i, b_i</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>addition (A+B)</td>
+<td>add pointwise: a_i + b_i</td>
+</tr>
+<tr>
+<td>multiplication (A*B)</td>
+<td>convolve [a_n, ..., a_0] with [b_n, ..., b_0]</td>
+</tr>
+</tbody>
+</table>
+<p>Notice that the operations on coefficients require a Field of some kind. In the previous section we implicitly used the Real Numbers.
+But we don't have to use Real Numbers. We can instead use any Field!</p>
+<p>Let's do some examples using <code>GF(5)</code> for the polynomial coefficients.</p>
+<p>This means that each coefficient must be in the set <code>{0, 1, 2, 3, 4}</code></p>
+<p>Addition:</p>
+<pre><code>(2x^2 + 3) + (4x^2 + 2x + 2)
+(2+4)x^2 + (0+2)x + (3+2)
+(1)x^2 + (2)x + (0)                     [addition in GF(5)]
+x^2 + 2x
+</code></pre>
+<p>Multiplication:</p>
+<pre><code>(2x + 3) * (3x + 1)
+(2x * 3x) + (2x * 1) + (3 * 3x) + (3 * 1)
+(2*3)x^2 + (2*1)x + (3*3)x + (3*1)
+x^2 + 2x + 4x + 3                       [multiplication in GF(5)]
+x^2 + (2+4)x + 3
+x^2 + x + 3                             [addition in GF(5)]
+
+</code></pre>
+<p>Take a moment to think about this. It's abstract and unfamiliar, but it is absolutely key.</p>
+<p><i><u>Exercise:</u></i> Using <code>GF(7)</code> for coefficients, compute <code>(2x^2 + 3) + (4x^2 + 2x + 2)</code></p>
+<p><i><u>Exercise:</u></i> If we use <code>GF(2)</code> for coefficients, how would we compute <code>(2x^2 + 3) + (4x^2 + 2x + 2)</code>? Notice that 2, 3, 4 are not elements of GF(2). But <code>2 == 0 (mod 2), 3 == 1 (mod 2), 4 == 0 (mod 2)</code>. Convince yourself the answer would be 1.</p>
+<p><i><u>Exercise:</u></i> Using <code>GF(2)</code> for coefficients, compute <code>(x^2 + 1) + (x^2 + x + 1)</code></p>
+<p><i><u>Exercise:</u></i> Using <code>GF(5)</code> for coefficients, compute <code>(2x^2 + 1) * (2x^2 + 3)</code></p>
+<p><i><u>Exercise:</u></i> Using <code>GF(2)</code> for coefficients, compute <code>(x + 1) * (x)</code></p>
+<h3>More notation</h3>
+<p>The previous exercises (you did do them, right? 😑) demonstrate that the Field we select for the coefficients of a polynomial is quite important.
+Mixing this up can cause some serious confusion. So, mathematicians introduced a special notation to describe it precisely.</p>
+<p>We will denote:</p>
+<p><code>F[x]</code> for the set of all polynomials using <code>F</code> as the Field for coefficients.</p>
+<p>Some examples:</p>
+<pre><code class="language-text">R[x]            [polynomials using the real-numbers for coefficients]
+Q[x]            [polynomials using the rational-numbers for coefficients]
+GF(3)[x]        [polynomials using GF(3)]
+GF(5)[x]        [polynomials using GF(5)]
+</code></pre>
+<h3>Size of F[X]</h3>
+<p>Let's be explicit and list out all the polynomials of order &lt; 3 that we have in <code>GF(3)[x]</code>:</p>
+<pre><code>0, 1, 2, x, x + 1, x + 2, 2x, 2x + 1, 2x + 2,
+x^2, x^2 + 1, x^2 + 2, x^2 + x, x^2 + x + 1, x^2 + x + 2, x^2 + 2x, x^2 + 2x + 1, x^2 + 2x + 2,
+2x^2, 2x^2 + 1, 2x^2 + 2, 2x^2 + x, 2x^2 + x + 1, 2x^2 + x + 2, 2x^2 + 2x, 2x^2 + 2x + 1, 2x^2 + 2x + 2,
+</code></pre>
+<p>There are 27 such polynomials in <code>GF(3)[x]</code>. Notice that <code>27 = 3^3</code>. This is no accident.</p>
+<p>In general when polynomial order &lt; m</p>
+<pre><code>size(F[x]) = size(F) ^ m
+</code></pre>
+<p>Some examples:</p>
+<table>
+<thead>
+<tr>
+<th>Coefficient Field (<code>F</code>)</th>
+<th>Polynomial Order Bound (<code>m</code>)</th>
+<th>Size of <code>F[x]</code> for order &lt; <code>m</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GF(5)</code></td>
+<td><code>2</code></td>
+<td><code>5^2 = 25</code></td>
+</tr>
+<tr>
+<td><code>GF(5)</code></td>
+<td><code>3</code></td>
+<td><code>5^3 = 125</code></td>
+</tr>
+<tr>
+<td><code>GF(2)</code></td>
+<td><code>2</code></td>
+<td><code>2^2 = 4</code></td>
+</tr>
+<tr>
+<td><code>GF(2)</code></td>
+<td><code>8</code></td>
+<td><code>2^8 = 256</code></td>
+</tr>
+<tr>
+<td><code>GF(p)</code></td>
+<td><code>k</code></td>
+<td><code>p^k</code></td>
+</tr>
+</tbody>
+</table>
+<p>This table suggests a few things:</p>
+<ul>
+<li>For computing, <code>GF(2)[x]</code> with order &lt; 8 has <code>256</code> elements, the same as an 8-bit byte!</li>
+<li>In general <code>GF(p)[x]</code> with order &lt; k can possibly represent a field with <code>p^k</code> elements, or <code>GF(p^k)</code></li>
+</ul>
+<p><i><u>Exercise:</u></i> List the polynomials in <code>GF(2)[x]</code> with order &lt; 3. How many does the theory predict?</p>
+<h3>More representations</h3>
+<p>Let's consider vector notation and again list out the polynomials of order &lt; 3 that we have in <code>GF(3)[x]</code>:</p>
+<pre><code class="language-text">[0, 0, 0], [0, 0, 1], [0, 0, 2],
+[0, 1, 0], [0, 1, 1], [0, 1, 2],
+[0, 2, 0], [0, 2, 1], [0, 2, 2],
+[1, 0, 0], [1, 0, 1], [1, 0, 2],
+[1, 1, 0], [1, 1, 1], [1, 1, 2],
+[1, 2, 0], [1, 2, 1], [1, 2, 2],
+[2, 0, 0], [2, 0, 1], [2, 0, 2],
+[2, 1, 0], [2, 1, 1], [2, 1, 2],
+[2, 2, 0], [2, 2, 1], [2, 2, 2]
+</code></pre>
+<p>Observe that the sequence behaves like number in base-3. From the <code>"ones"</code> column, we carry into the <code>"threes"</code>
+column and then carry into the <code>"nines"</code> column.</p>
+<p>This observation gives us another way to represent our polynomials. We can represent any polynomial from <code>GF(p)[x]</code>
+as "ordinary numbers" in <code>Base p</code>.</p>
+<p>For example, the following are all equivalent representations of the same element of <code>GF(3)[x]</code>:</p>
+<pre><code>2x^2 + x + 1
+[2, 1, 1]
+22               [Because 22 = 2*3^2 + 1*3^1 + 1*3^0]
+</code></pre>
+<p>This representation allows us to talk about polynomials as ordinary numbers. We will do this extensively in the
+following sections. This is quite common in the literature and can be quite confusing. The key is that we are NOT
+actually talking about numbers like you're used to. It's instead just a shorthand. Its easier to write <code>22</code> than to
+write <code>2x^2 + x + 1</code>. If you ever get confused, just convert back to polynomials.</p>
+<p>Let's list the first few polynomials of <code>GF(3)[x]</code> with all representations side-by-side:</p>
+<table>
+<thead>
+<tr>
+<th>Polynomial</th>
+<th>Vector</th>
+<th>Number</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td><code>[0, 0, 0]</code></td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td><code>[0, 0, 1]</code></td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td><code>[0, 0, 2]</code></td>
+<td><code>2</code></td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td><code>[0, 1, 0]</code></td>
+<td><code>3</code></td>
+</tr>
+<tr>
+<td><code>x + 1</code></td>
+<td><code>[0, 1, 1]</code></td>
+<td><code>4</code></td>
+</tr>
+<tr>
+<td><code>x + 2</code></td>
+<td><code>[0, 1, 2]</code></td>
+<td><code>5</code></td>
+</tr>
+<tr>
+<td><code>2x</code></td>
+<td><code>[0, 2, 0]</code></td>
+<td><code>6</code></td>
+</tr>
+<tr>
+<td><code>2x + 1</code></td>
+<td><code>[0, 2, 1]</code></td>
+<td><code>7</code></td>
+</tr>
+<tr>
+<td><code>2x + 2</code></td>
+<td><code>[0, 2, 2]</code></td>
+<td><code>8</code></td>
+</tr>
+<tr>
+<td><code>x^2</code></td>
+<td><code>[1, 0, 0]</code></td>
+<td><code>9</code></td>
+</tr>
+<tr>
+<td><code>x^2 + 1</code></td>
+<td><code>[1, 0, 1]</code></td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td>... etc ...</td>
+<td>... etc ...</td>
+<td>... etc ...</td>
+</tr>
+</tbody>
+</table>
+<p><i><u>Exercise:</u></i> Complete the above table for order &lt; 3</p>
+<p><i><u>Exercise:</u></i> Build a similar comparison table for <code>GF(2)[x]</code> where order &lt; 4. What's the largest number (in all representations)? Why?</p>
+<p><i><u>Exercise:</u></i> From <code>56</code>, determine the coefficients for the corresponding polynomial in <code>GF(2)[x]</code>. This is a very important skill to have for later sections. What common operation in
+computing are you doing in this exercise?</p>
+<p><i><u>Exercise:</u></i> Convert <code>x^6 + x + 1</code> from <code>GF(2)[x]</code> into the decimal number representation.</p>
+<h3>The big problems on the road to GF(p^k)</h3>
+<p>We're finally ready to construct fields from our polynomials in <code>GF(p)[x]</code>.</p>
+<p>But there are two big problems:</p>
+<ol>
+<li>
+<p>When we multiply two polynomials, the order grows. We cannot have a finite field if the order grows infinitely. As an example, consider: <code>x*(x+1) = x^2 + x</code> and <code>x*(x^2 + x) = x^3 + x^2</code></p>
+</li>
+<li>
+<p>We stated in the previous section that we don't have multiplicative inverses. This is an absolute requirement for a Field.</p>
+</li>
+</ol>
+<p>There happens to be a single solution for both of these problems. Just like with modular arithmetic, we'll simply use a <code>"modulus polynomial"</code>. And, we'll need that to be a "prime modulus polynomial".</p>
+<h3>Irreducible Polynomials</h3>
+<p>An irreducible polynomial <code>Q</code> is a polynomial in <code>F[x]</code> such that no other polynomial divides it evenly (excluding <code>1</code> and <code>Q</code>).</p>
+<p>Example, for <code>GF(3)[x]</code>, we can show that <code>x^2 + 1</code> is an irreducible polynomial:</p>
+<pre><code>(x^2 + 1) / (x) = x rem 1
+(x^2 + 1) / (x + 1) = x + 2 rem 2
+(x^2 + 1) / (x + 2) = x + 1 rem 2
+(x^2 + 1) / (2x) = 2x rem 1
+(x^2 + 1) / (2x + 1) = 2x + 2 rem 2
+(x^2 + 1) / (2x + 2) = 2x + 1 rem 2
+</code></pre>
+<p>We can also call these polynomials "prime", just like integers that are prime.</p>
+<p><i><u>Exercise:</u></i> Is <code>x^2 + 1</code> an irreducible polynomial in <code>GF(2)[x]</code>? Why or why not?</p>
+<p><i><u>Exercise:</u></i> Is <code>x^2 + x + 1</code> an irreducible polynomial in <code>GF(2)[x]</code>? Why or why not?</p>
+<p><i><u>Exercise:</u></i> Is <code>x^2 + x</code> be an irreducible polynomial for some <code>F[x]</code>? Why or why not?</p>
+<h3>Intermission</h3>
+<p>Whew, That's a lot of info!</p>
+<p>Let's take a short break. You earned it!</p>
+<table>
+<thead>
+<tr>
+<th>Your mood</th>
+<th>Video Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Whoa, that's heavy</td>
+<td><a href="https://www.youtube.com/watch?v=Urg-EqR-pHc">enjoy</a></td>
+</tr>
+<tr>
+<td>Cute Cats</td>
+<td><a href="https://www.youtube.com/watch?v=tpiyEe_CqB4">enjoy</a></td>
+</tr>
+<tr>
+<td>Epic Fails</td>
+<td><a href="https://www.youtube.com/watch?v=UfWggAiIFT8">enjoy</a></td>
+</tr>
+<tr>
+<td>Comedy Legal Docs</td>
+<td><a href="https://www.supremecourt.gov/DocketPDF/22/22-293/242292/20221003125252896_35295545_1-22.10.03%20-%20Novak-Parma%20-%20Onion%20Amicus%20Brief.pdf">enjoy</a></td>
+</tr>
+<tr>
+<td>Nerdy Raps</td>
+<td><a href="https://www.youtube.com/watch?v=Fow7iUaKrq4">enjoy</a></td>
+</tr>
+<tr>
+<td>Nerds talking about Emacs</td>
+<td><a href="https://www.youtube.com/watch?v=urcL86UpqZc">enjoy</a></td>
+</tr>
+<tr>
+<td>Surprise Me</td>
+<td><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">enjoy</a> (you asked for it)</td>
+</tr>
+</tbody>
+</table>
+<p>Feeling refreshed? Good!</p>
+<p>Let's build a new Field!</p>
+<h3>GF(3^2) by example</h3>
+<p>Using the irreducible polynomial <code>Q = x^2 + 1</code>, we will build <code>GF(3^2)</code> or <code>GF(9)</code>. Just like modular arithmetic, we define our operations as
+normal addition and multiplication, but with a final "modulus" step.</p>
+<p>Consider the polynomials from <code>GF(3)[x]</code> with order &lt; 2:</p>
+<pre><code>A = 2x + 1
+B = x
+</code></pre>
+<p>And we multiply them to get C:</p>
+<pre><code>C = 2x^2 + x
+</code></pre>
+<p>But, <code>C</code> is too big and isn't in <code>GF(3)[x]</code> with order &lt; 2. So, we can apply our irreducible polynomial by doing a long-division and keeping only the remainder.</p>
+<pre><code>C % Q = (2x^2 + x) % (x^2 + 1)
+      = x + 1
+</code></pre>
+<p><i><u>Exercise:</u></i> Check this calculation yourself.</p>
+<p>Similarly, we can now find inverses:</p>
+<pre><code>inv(2x + 1) = 2x + 2
+</code></pre>
+<p>Checking:</p>
+<pre><code>(2x + 1) * (2x + 2)
+poly_multiply((2x + 1), (2x + 2)) % Q
+[(2*2)x^2 + (2*2 + 1*2)x + (1*2)] % Q
+(x^2 + 2) % Q
+(x^2 + 2) % (x^2 + 1)
+1
+</code></pre>
+<p>Thus, we can manipulate expressions now the way that the algebra gods intended</p>
+<pre><code>(2x + 1) * (x) = (x + 1)
+inv(2x + 1) * (2x + 1) * (x) = inv(2x + 1) * (x + 1)
+(1) * (x) = (2x + 2) * (x + 1)
+x = (2x^2 + x + 2) % (x^2 + 1)
+x = x
+</code></pre>
+<p>With this, we've constructed <code>GF(3^2)</code> or <code>GF(9)</code>. Notationally, we might say that we've constructed <code>GF(9)</code> as:</p>
+<pre><code>GF(9) = G(3)[x]/(x^2 + 1)
+</code></pre>
+<p>We won't use this notation much, but it's useful in some cases since different irreducible
+polynomials will lead to different relationships in the resulting field.</p>
+<p><i><u>Exercise:</u></i> Compute <code>x * x</code> in our <code>GF(9)</code> field using the irreducible polynomial <code>x^2 + 1</code>.</p>
+<p><i><u>Exercise:</u></i> Determine the inverse of <code>x</code> in our <code>GF(9)</code> field using the irreducible polynomial <code>x^2 + 1</code>.</p>
+<p><i><u>Exercise:</u></i> Build a multiplication table for <code>GF(2^3)</code> using the irreducible polynomial <code>x^3 + x + 1</code>.</p>
+<h3>Operation tables for GF(3^2)</h3>
+<p>We'll specify the operation tables using the ordinary decimal number representation. If you're confused, convert them
+back to polynomials and work-through the calculations.</p>
+<p>For Addition:</p>
+<table>
+<thead>
+<tr>
+<th>+</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+<td>4</td>
+<td>5</td>
+<td>3</td>
+<td>7</td>
+<td>8</td>
+<td>6</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>2</td>
+<td>0</td>
+<td>1</td>
+<td>5</td>
+<td>3</td>
+<td>4</td>
+<td>8</td>
+<td>6</td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>4</td>
+<td>5</td>
+<td>3</td>
+<td>7</td>
+<td>8</td>
+<td>6</td>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>5</td>
+<td>3</td>
+<td>4</td>
+<td>8</td>
+<td>6</td>
+<td>7</td>
+<td>2</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>7</td>
+<td>8</td>
+<td>6</td>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+<td>4</td>
+<td>5</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>8</strong></td>
+<td>8</td>
+<td>6</td>
+<td>7</td>
+<td>2</td>
+<td>0</td>
+<td>1</td>
+<td>5</td>
+<td>3</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p>Similarly for Multiplication using <code>Q = x^2 + 1</code> (also notated as <code>10</code>)</p>
+<table>
+<thead>
+<tr>
+<th>*</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>0</td>
+<td>2</td>
+<td>1</td>
+<td>6</td>
+<td>8</td>
+<td>7</td>
+<td>3</td>
+<td>5</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>0</td>
+<td>3</td>
+<td>6</td>
+<td>2</td>
+<td>5</td>
+<td>8</td>
+<td>1</td>
+<td>4</td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>0</td>
+<td>4</td>
+<td>8</td>
+<td>5</td>
+<td>6</td>
+<td>1</td>
+<td>7</td>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>0</td>
+<td>5</td>
+<td>7</td>
+<td>8</td>
+<td>1</td>
+<td>3</td>
+<td>4</td>
+<td>6</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>0</td>
+<td>6</td>
+<td>3</td>
+<td>1</td>
+<td>7</td>
+<td>4</td>
+<td>2</td>
+<td>8</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>0</td>
+<td>7</td>
+<td>5</td>
+<td>4</td>
+<td>2</td>
+<td>6</td>
+<td>8</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>8</strong></td>
+<td>0</td>
+<td>8</td>
+<td>4</td>
+<td>7</td>
+<td>3</td>
+<td>2</td>
+<td>5</td>
+<td>1</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+<p>Let's check some addition:</p>
+<pre><code class="language-text">5 + 6
+(x + 2) + (2x)       [convert to polynomial representation]
+(1+2)x + (2+0)       [polynomial addition: group coefficients]
+0x + 2               [coefficient addition in GF(3)]
+2                    [final answer: polynomial and decimal representations are the same]
+</code></pre>
+<p>And multiplication:</p>
+<pre><code class="language-text">5 * 6
+{x + 2} * {2x}            [convert to polynomial representation]
+[(x + 2) * (2x)] % Q      [apply the definition of multiplication]
+[(x * 2x) + (2 * 2x)] % Q [polynomial multiplication]
+[(2)x^2 + (2*2)x] % Q     [rearrange]
+[(2)x^2 + (1)x] % Q       [coefficient multiplication in GF(3)]
+(2x^2 + x) % Q            [simplify]
+(2x^2 + x) % (x^2 + 1)    [expand modulus: irreducible polynomial]
+(2x^2 + x) - 2(x^2 + 1)   [need to subtract it off two times)
+x + (-2)                  [result]
+x + 1                     [apply the negation]
+4                         [convert to decimal representation]
+</code></pre>
+<p><i><u>Exercise:</u></i> Check as many additions and multiplications as you need to until you fully understand where this table comes from. If the above table still feels like <em>magic</em>, you haven't done enough exercises.</p>
+<h3>GF(p^k) in General</h3>
+<p>Let's formalize everything into a general-purpose theory for building any <code>GF(p^k)</code> from <code>GF(p)</code>.</p>
+<p>First, we must determine the <code>k</code> that we wish to use. Then, we select an irreducible
+polynomial <code>Q</code> of order <code>k</code> from <code>GF(p)[x]</code>. Finally, we define our addition and multiplication
+as follows:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Calculation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>add (+)</code></td>
+<td><code>poly_add(A, B)</code></td>
+</tr>
+<tr>
+<td><code>mult (*)</code></td>
+<td><code>poly_mod(poly_mult(A, B), Q)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Where:</p>
+<ul>
+<li><code>poly_add</code> is ordinary polynomial addition</li>
+<li><code>poly_mult</code> is ordinary polynomial multiplication</li>
+<li><code>poly_mod</code> is ordinary polynomial long-division, but we keep the remainder only</li>
+</ul>
+<p>Notice that we don't apply the modulus operation on the addition. We could do it, but it is superfluous.
+Since the irreducible polynomial is of larger order than any element in <code>GF(p^k)</code>, all additions of
+the coefficients will be "smaller" than it.</p>
+<h3>GF(p^k) Examples</h3>
+<p>Lastly, we give some examples of various parameters that result in a Field. The values: <code>p</code>, <code>k</code>, and <code>Q</code>
+need to be selected up-front before using a Field. Commonly <code>Q</code> is taken from some table after selecting
+values <code>p</code> and <code>k</code>.</p>
+<p>Here are some Fields:</p>
+<table>
+<thead>
+<tr>
+<th><code>p</code></th>
+<th><code>k</code></th>
+<th><code>Q</code></th>
+<th><code>F[x]/Q</code></th>
+<th><code>GF(n=p^k)</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>3</code></td>
+<td><code>2</code></td>
+<td><code>x^2 + 1</code></td>
+<td><code>GF(3)[x]/(x^2+1)</code></td>
+<td><code>GF(9)</code></td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td><code>2</code></td>
+<td><code>x^2 + x + 1</code></td>
+<td><code>GF(2)[x]/(x^2+x+1)</code></td>
+<td><code>GF(4)</code></td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td><code>8</code></td>
+<td><code>x^8 + x^4 + x^3 + x^2 + 1</code></td>
+<td><code>GF(2)[x]/(x^8+x^4+x^3+x^2+1)</code></td>
+<td><code>GF(256)</code></td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td><code>8</code></td>
+<td><code>x^8 + x^5 + x^3 + x + 1</code></td>
+<td><code>GF(2)[x]/(x^8+x^5+x^3+x+1)</code></td>
+<td><code>GF(256)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Notice here that we've constructed <code>GF(256)</code> with two different irreducible polynomials. These are NOT
+equivalent constructions. They happen to share the same numbers, but are otherwise distinct.</p>
+<h3>Conclusion</h3>
+<p>This is a lot of abstraction in one place so we'll finish with a quick summary of what we've done.</p>
+<ol>
+<li>We demonstrated that we can build polynomials with coefficients from any field <code>F</code></li>
+<li>We introduced the notation <code>F[x]</code> to represent all such polynomials over a field <code>F</code></li>
+<li>We explored the size of <code>GF(p)[x]</code> for order &lt; <code>k</code></li>
+<li>We introduced the "number" representation for polynomial elements of <code>GF(p)[x]</code> and compared all 3 representations.</li>
+<li>We presented Irreducible Polynomials as the polynomial version of a Prime Number</li>
+<li>We demonstrated multiplications in <code>GF(3^2)</code> using the irreducible polynomial <code>x^2 + 1</code></li>
+<li>We gave a general framework for constructing a field <code>GF(p^k)</code></li>
+</ol>
+<p>As we mentioned in the beginning, this is the most challenging section. Feel free to spend some time with it to fully digest it.
+Do a lot of examples. Read wikipedia. Consider consulting supplemental resources and returning for a re-read.
+Again, active learning is required. If you struggle a bit, just remember that math is hard for everyone.</p>
+<p>The good news is that most of the pure theory is over. In the next sections we'll move on to computer science applications.</p>
+<p>Next time, we'll be coding!</p>
+<p>Let's Go! (soon)</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

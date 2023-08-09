@@ -28,6 +28,8 @@
 <a href="galois_fields_for_great_good_00.html">first</a> |
 <a href="galois_fields_for_great_good_02.html">previous</a> |
 <a href="galois_fields_for_great_good_04.html">next</a></p>
+<!-- We execute commands from this repo: ensure that it is built -->
+
 <h2>Implementing GF(p)</h2>
 <p>This is part 3 of a series on Abstract Algebra. In this part, we'll implement the GF(p) fields we discussed last time.</p>
 <h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/gf_p.rs"><code>src/gf_p.rs</code></a></h3>
@@ -47,11 +49,11 @@ prime. By default, we'll use <code>GF(5)</code>:</p>
 <p>The type we use to represent a number in <code>GF(p)</code> is just an unsigned 8-bit integer (<code>u8</code>).
 This design will allow for prime fields up to size <code>251</code> (the largest prime that fits
 in 8-bits). We will also tell Rust that its okay to copy (<code>Clone</code> &amp; <code>Copy</code>) and to compare
-by two numbers via equality (<code>PartialEq</code>)</p>
+two numbers via equality (<code>PartialEq</code>)</p>
 <pre><code class="language-rust">#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GF(u8);
 </code></pre>
-<p>Constructing a new number is <code>GF(p)</code> is easy: we just need to ensure it's within
+<p>Constructing a new number in <code>GF(p)</code> is easy: we just need to ensure it's within
 the set <code>{0, 1, ..., p-1}</code></p>
 <pre><code class="language-rust">impl GF {
   pub fn new(val: u8) -&gt; GF {
@@ -314,7 +316,7 @@ out of the scope for this series and uses more advanced Rust features so we won'
 this kind of thing, go read about <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser">Recursive Descent Parsers</a>,
 and check out my other work on compilers (<a href="sectorc.html">here</a> and <a href="otcc_deobfuscated.html">here</a>).</p>
 <p>The calculator looks like:</p>
-<pre><code class="language-shell">$ cargo build &amp;&amp; ./target/debug/gf_p_calc
+<pre><code class="language-shell">$ ./target/debug/gf_p_calc
 ================================================================================
 A Calculator for GF(5)
 ================================================================================

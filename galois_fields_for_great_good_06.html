@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (06)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_05.html">previous</a> |
+next (soon)</p>
+<!--
+[next](galois_fields_for_great_good_07.html)
+-->
+
+<!-- We execute commands from this repo: ensure that it is built -->
+
+<h2>Implementing GF(p^k)</h2>
+<p>This is part 6 of a series on Abstract Algebra. In this part, we'll implement the GF(p^k) fields we discussed last time.</p>
+<h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/gf_p_k.rs"><code>src/gf_p_k.rs</code></a></h3>
+<h4>An implementation of GF(p^k) where p is a prime number and k is any integer &gt;= 1</h4>
+<p>We will implement addition, subtraction, multiplication, and division using
+operator-overloading so we can use the normal operators: +, -, *, /</p>
+<pre><code class="language-rust">use std::ops::{Add, Mul, Sub, Div};
+</code></pre>
+<p>Similar to our implementation of <code>GF(p)</code> fields, we'll define the constant parameters
+here instead of using advanced Rust features.</p>
+<p>In particular, we need:</p>
+<ul>
+<li><code>P</code>: A prime value for the coefficients field <code>GF(p)</code></li>
+<li><code>K</code>: A polynomial order limit parameter</li>
+<li><code>Q</code>: An irreducible polynomial for the modulus operation</li>
+</ul>
+<p>We use some defaults below for a <code>GF(3^2)</code> Field.</p>
+<p>Feel free change the parameters to get a different field. But, please do be careful to configure
+correctly. Most notably: <code>P</code> must be prime, and <code>Q</code> must be irreducible.</p>
+<pre><code class="language-rust">pub const P: usize = 3;  // Default: GF(3)
+pub const K: usize = 2;  // Default: All polynomials below x^2
+pub const Q: usize = 10; // Default: x^2 + 1
+</code></pre>
+<p>Our representation for a number in <code>GF(p^k)</code> will use the vector representation with unsigned 8-bit integers (<code>u8</code>).
+Each element in the vector is an element of <code>GF(p)</code>..</p>
+<pre><code class="language-rust">#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GF([u8; K]); // An array of K elements of type u8
+</code></pre>
+<p>The number of elements we have in <code>GF(p^k)</code> is clearly <code>p^k</code>, but we need a little care to
+avoid silent integer overflow.</p>
+<pre><code class="language-rust">impl GF {
+  pub fn number_of_elements() -&gt; usize {
+    let p: u32 = P.try_into().unwrap(); // Abort if the number doesn't fit in 32-bits
+    let k: u32 = K.try_into().unwrap(); // Abort if the number doesn't fit in 32-bits
+    let p_k = p.checked_pow(k).unwrap(); // Abort if the number doesn't fit in 32-bits
+    p_k as usize
+  }
+}
+</code></pre>
+<p>Let's construct a new number in <code>GF(p^k)</code>. Our function will accept a number in the "decimal representation" and will convert it into the internal vector representation.</p>
+<p>It's easy to mix up ordering and "endianness", so we'll be explicit about how we're using  vector representation:</p>
+<pre><code>index 0 =&gt; 1
+index 1 =&gt; x
+index 2 =&gt; x^2
+index 3 =&gt; x^3
+index 4 =&gt; x^4
+... etc ...
+</code></pre>
+<p>Okay, let's put it all together</p>
+<pre><code class="language-rust">impl GF {
+  pub fn new(mut val: u64) -&gt; GF {
+    // Sanity check!
+    assert!((val as usize) &lt; GF::number_of_elements());
+
+    // Decompose the decimal representation into a vector
+    let p = P as u64;
+    let mut vec = [0; K];
+    for i in 0..K {
+      vec[i] = (val % p) as u8;
+      val /= p;
+    }
+
+    GF(vec)
+  }
+}
+</code></pre>
+<p>And we'll want to convert back to decimal representation also. This is effectively a
+dot-product with a Radix-P Basis: <code>[1, P, P^2, P^3, ...]</code></p>
+<pre><code class="language-rust">impl GF {
+  pub fn value(&amp;self) -&gt; u64 {
+    // Convert vector representation back into decimal representation
+    let p = P as u64;
+    let mut val = 0;
+    for i in (0..K).rev() {
+      val = val * p + self.0[i] as u64;
+    }
+    val
+  }
+}
+</code></pre>
+<h4>Coefficient Field Implementation</h4>
+<p>We will quickly re-implement parts of <code>GF(p)</code> here for the coefficients.</p>
+<p>We will need these internally to build the full Field.
+We could inline them, but doing so is distracting when reading the polynomial arithmetic
+algorithms.</p>
+<p>Please refer to the <code>GF(p)</code> implementation if these aren't clear:</p>
+<pre><code class="language-rust">fn coeff_add(a: u8, b: u8) -&gt; u8 {
+  (((a as u16) + (b as u16)) % (P as u16)) as u8
+}
+fn coeff_neg(a: u8) -&gt; u8 {
+  ((P as u8) - a) % (P as u8)
+}
+fn coeff_mul(a: u8, b: u8) -&gt; u8 {
+  (((a as u16) * (b as u16)) % (P as u16)) as u8
+}
+</code></pre>
+<h4>Addition and Subtraction</h4>
+<p>Addition is very simple. It's just a simple pointwise-addition of coefficients (vector addition).</p>
+<pre><code class="language-rust">impl Add&lt;GF&gt; for GF {
+  type Output = GF;
+  fn add(self, rhs: GF) -&gt; GF {
+    let mut vec = [0; K];
+    for i in 0..K {
+      vec[i] = coeff_add(self.0[i], rhs.0[i]);
+    }
+    GF(vec)
+  }
+}
+</code></pre>
+<p>Negation (or additive-inverse) is fairly straight-forward also. Just vectorized.</p>
+<pre><code class="language-rust">impl GF {
+  pub fn negate(self) -&gt; GF {
+    let mut vec = [0; K];
+    for i in 0..K {
+      vec[i] = coeff_neg(self.0[i]);
+    }
+    GF(vec)
+  }
+}
+</code></pre>
+<p>And subtraction: trivial.</p>
+<p>Getting bored? Be careful what you wish for...</p>
+<pre><code class="language-rust">impl Sub&lt;GF&gt; for GF {
+  type Output = GF;
+  fn sub(self, rhs: GF) -&gt; GF {
+    self + rhs.negate()
+  }
+}
+</code></pre>
+<h4>Multiplication and Division</h4>
+<p>Multiplication is a completely different beast than addition. You were warned ;-).</p>
+<p>Recall that multiplication is a convolution of the coefficients. We can compute a convolution
+by effectively flipping around one of the vectors and computing sliding dot-products.</p>
+<p>Let's do some examples:</p>
+<pre><code class="language-text">Consider:
+  A = [a, b, c, d]
+  B = [e, f, g, h]
+
+We want to compute:
+  C = convolve(A, B)
+    = [c_0, c_1, c_2, c_3, c_4, c_5, c_6]
+
+We can compute each of these coefficients (`c_i`) as follows:
+
+  c_0
+  ----------------------------
+  [d, c, b, a]
+            *
+           [e, f, g, h]
+
+  = a*h
+
+  c_1
+  ----------------------------
+  [d, c, b, a]
+         *  *
+        [e, f, g, h]
+
+  = b*e + a*f
+
+  c_2
+  ----------------------------
+  [d, c, b, a]
+      *  *  *
+     [e, f, g, h]
+
+  = c*e + b*f + a*g
+
+
+  ----------------------------
+  ... SNIP ...
+  ----------------------------
+
+
+  c_5
+  ----------------------------
+        [d, c, b, a]
+         *  *
+  [e, f, g, h]
+
+  = d*g + c*h
+
+  c_6
+  ----------------------------
+           [d, c, b, a]
+            *
+  [e, f, g, h]
+
+  = d*h
+
+</code></pre>
+<p>As you can see, computing a convolution on two arrays is a fairly simple shift-and-multiply
+operation. It can be a LOT of multiply operations, in fact <code>O(n^2)</code>, but it's otherwise fairly
+formulaic.</p>
+<p>A few things to note:</p>
+<ol>
+<li>Instead of actually reversing a vector, we'll just use backwards array indexing</li>
+<li>Observe that a convolution of two k-element vectors produces a (2k-1)-element result!</li>
+</ol>
+<p>Here's some pseudocode for the algorithm:</p>
+<pre><code class="language-text">for i in 0..(2k-1) {
+  c[i] = 0
+  for j in 0..k {
+    c[i] += a[i - j] * b[j]     (where out-of-bounds indices implicitly load 0)
+  }
+}
+</code></pre>
+<p>And here's the real implementation that deals with all the real-world practical messiness. Compare it to the pseudocode if it's confusing. The same algorithmic structure is present.</p>
+<pre><code class="language-rust">fn poly_mul(a: &amp;[u8; K], b: &amp;[u8; K]) -&gt; [u8; 2*K-1] {
+  // A convolution implementation over the field GF(p)
+  let mut c = [0; 2*K-1];
+  for i in 0..(2*K-1) {
+    // Each coefficient is the sum of many sub-terms
+    for j in 0..K {
+      // Ignore terms with out-of-bounds indices (they are implicitly zero)
+      if i &lt; j || i - j &gt;= K {
+        continue;
+      }
+      // Add this term to the result (NOTE: poly_a is reversed!)
+      c[i] = coeff_add(c[i], coeff_mul(a[i - j], b[j]));
+    }
+  }
+  c
+}
+</code></pre>
+<p>Great fun, huh!</p>
+<p>Now we need to implement polynomial modulus.</p>
+<p>This one is also tricky because long-division is tedious. Fortunately, it reduces to
+an algorithm just as cleanly as convolution.</p>
+<p>A key observation is that we don't care about the result of the division. We can discard that.
+We only care about what remains after removing some number of <code>Q</code>s from <code>A</code>.</p>
+<p>Consider:</p>
+<pre><code class="language-text">A = 2x^5 + x^4 + 1
+Q = x^3 + 1
+</code></pre>
+<p>And suppose we want to compute:</p>
+<pre><code class="language-text">A % Q
+</code></pre>
+<p>We can do this by starting at the largest term (<code>2x^5</code>) and eliminating it.
+After, we'll have just a 4th order polynomial. Then, we can repeat until we have a remainder.</p>
+<p>For this, we'll "shift" and "scale" up <code>Q</code> and subtract it from <code>A</code>:</p>
+<pre><code class="language-text">A' = A - 2x^2 * Q
+   = (2x^5 + x^4 + 1) - 2x^2 * (x^3 + 1)        [expand]
+   = (2x^5 + x^4 + 1) + (-2x^2 * (x^3 + 1))     [re-arrange]
+   = (2x^5 + x^4 + 1) + (x^2 * (x^3 + 1))       [negate in GF(3)]
+   = (2x^5 + x^4 + 1) + (x^5 + x^2)             [multiply: &quot;shift&quot; and &quot;scale&quot;]
+   = (2x^5 + x^4 + 1) + (x^5 + x^2)             [add in GF(3)]
+   = x^4 + x^2 + 1                              [result: polynomial of order 4!]
+</code></pre>
+<p>Next, we can eliminate the <code>x^4</code> term by computing:</p>
+<pre><code class="language-text">A'' = A' - x * Q
+    = (x^4 + x^2 + 1) - x * (x^3 + 1)           [expand]
+</code></pre>
+<p><i><u>Exercise:</u></i> Compute this to confirm your understanding.</p>
+<p>In order to do this, we need to multiply <code>Q</code>. But this might seem like some kind of chicken-and-egg problem?</p>
+<p>Well actually, we're doing two simpler operations:</p>
+<ul>
+<li><code>shift</code>: Multiplying by a monomial in <code>(1, x, x^2, x^3, ...etc...)</code> is a simple shift of the coefficient array</li>
+<li><code>scale</code>: Multiplying by any scalar is a simple pointwise-coefficient multiply.</li>
+</ul>
+<p>So we don't need normal polynomial multiplication to do this.</p>
+<p>Okay, let's code!</p>
+<pre><code class="language-rust">fn poly_mod(mut a: [u8; 2*K-1], q: &amp;[u8; K+1]) -&gt; [u8; K] {
+  // We'll iterate from high-terms to low-terms, eliminating each:
+  //   2k-2, 2k-3, ..., k+1, k
+  // This will leave exactly k coefficients
+  for i in (K..(2*K-1)).rev() {
+
+    // Determine &quot;our shift&quot; and &quot;scale&quot; for `Q`
+    let shift = i - K; // coefficient shift
+    let scale = coeff_neg(a[i]); // coefficient scale
+
+    // Apply to each coefficient, shifted
+    for j in shift..=i { // inclusive: [shift, i]
+      // Shift and Scale up one coefficient of Q
+      let val = coeff_mul(scale, q[j-shift]);
+      // Now &quot;subtract&quot; it (using addition)
+      a[j] = coeff_add(a[j], val);
+    }
+    // The largest term (ith) should be zero now!
+    assert_eq!(a[i], 0);
+  }
+  // Only the lowest k-terms are possibly non-zero, now
+  a[..K].try_into().unwrap()
+}
+</code></pre>
+<p>Lastly, we need a little routine to convert our irreducible polynomial into the vector
+notation used by <code>poly_mod()</code></p>
+<pre><code class="language-rust">fn poly_q() -&gt; [u8; K+1] {
+  // Decompose the decimal representation into a vector
+  let p = P as u64;
+  let mut val = Q as u64;
+  let mut vec = [0; K+1];
+  for i in 0..K+1 {
+    vec[i] = (val % p) as u8;
+    val /= p;
+  }
+  vec
+}
+</code></pre>
+<p>With these polynomial operations, our final multiply is simple to complete.
+It's just the definition that we gave in the previous theory
+section: <code>poly_mod(poly_mul(A, B), Q)</code></p>
+<pre><code class="language-rust">impl Mul&lt;GF&gt; for GF {
+  type Output = GF;
+  fn mul(self, rhs: GF) -&gt; GF {
+    let vec = poly_mod(poly_mul(&amp;self.0, &amp;rhs.0), &amp;poly_q());
+    GF(vec)
+  }
+}
+</code></pre>
+<p>And now I suspect the dear reader is a tad exhausted from our journey through the <em>Polynomial Math Wilderness</em>.</p>
+<p>Well it's your lucky day! We can adapt the rest from <code>GF(p)</code> fields by reusing our simple
+naive brute-force approach to inverses.</p>
+<pre><code class="language-rust">impl GF {
+  pub fn invert(self) -&gt; Result&lt;GF, String&gt; {
+    // Important: Zero has no inverse, it's invalid
+    if self == GF::new(0) {
+      return Err(&quot;Zero has no inverse&quot;.to_string());
+    }
+    // Scan the numbers {1, 2, ..., P-1} until we find the inverse
+    for x in 1..GF::number_of_elements() {
+      let candidate = GF::new(x as u64);
+      if self * candidate == GF::new(1) {
+        return Ok(candidate); // Found!
+      }
+    }
+    unreachable!(&quot;Every non-zero number has an inverse&quot;);
+  }
+}
+</code></pre>
+<p>And division can be exactly the same also.</p>
+<pre><code class="language-rust">impl Div&lt;GF&gt; for GF {
+  type Output = Result&lt;GF, String&gt;;
+  fn div(self, rhs: Self) -&gt; Result&lt;GF, String&gt; {
+    // Important: Cannot divide by zero
+    if rhs == GF::new(0) {
+      return Err(&quot;Cannot divide by zero&quot;.to_string());
+    }
+    Ok(self * rhs.invert().unwrap())
+  }
+}
+</code></pre>
+<h4>Some final things</h4>
+<p>Just as before, we need to teach Rust a few extra tricks.
+These are all quite similar to <code>GF(p)</code> if you'd rather skim them.</p>
+<p>Printing out numbers:</p>
+<pre><code class="language-rust">impl std::fmt::Display for GF {
+  fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter) -&gt; std::fmt::Result {
+    write!(f, &quot;{}&quot;, self.value())
+  }
+}
+</code></pre>
+<p>And converting strings into our Field's numbers:</p>
+<pre><code class="language-rust">impl std::str::FromStr for GF {
+  type Err = String;
+  fn from_str(s: &amp;str) -&gt; Result&lt;GF, String&gt; {
+    let num: u64 = s.parse().map_err(|_| format!(&quot;Not an 64-bit integer&quot;))?;
+    // Return an error if the number is too big for the field
+    let limit = GF::number_of_elements() as u64;
+    if num &gt;= limit {
+      return Err(format!(&quot;Number too large, got {}, but limit is {}&quot;, num, limit));
+    }
+    Ok(GF::new(num))
+  }
+}
+</code></pre>
+<p>And telling Rust that we built a Field type:</p>
+<pre><code class="language-rust">impl crate::field::Field for GF {
+  fn number_of_elements() -&gt; usize {
+    GF::number_of_elements()
+  }
+}
+</code></pre>
+<h4>Testing Time</h4>
+<p>Note that these tests assume <code>GF(3^2)</code>. If you change the field, they are not expected to pass.</p>
+<pre><code class="language-rust">#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // TEST: Verify that decimal representations are converted to vector representation correctly
+  #[test]
+  fn test_convert() {
+    assert_eq!(GF::new(0), GF([0, 0]));
+    assert_eq!(GF::new(1), GF([1, 0]));
+    assert_eq!(GF::new(2), GF([2, 0]));
+    assert_eq!(GF::new(3), GF([0, 1]));
+    assert_eq!(GF::new(4), GF([1, 1]));
+    assert_eq!(GF::new(5), GF([2, 1]));
+    assert_eq!(GF::new(6), GF([0, 2]));
+    assert_eq!(GF::new(7), GF([1, 2]));
+    assert_eq!(GF::new(8), GF([2, 2]));
+  }
+
+  // TEST: Verify conversion to vector representations and back to decimal representation is an identity
+  #[test]
+  fn test_convert_identity() {
+    assert_eq!(GF::new(0).value(), 0);
+    assert_eq!(GF::new(1).value(), 1);
+    assert_eq!(GF::new(2).value(), 2);
+    assert_eq!(GF::new(3).value(), 3);
+    assert_eq!(GF::new(4).value(), 4);
+    assert_eq!(GF::new(5).value(), 5);
+    assert_eq!(GF::new(6).value(), 6);
+    assert_eq!(GF::new(7).value(), 7);
+    assert_eq!(GF::new(8).value(), 8);
+  }
+
+  // TEST: We shouldn't be able to construct numbers out of the range
+  #[should_panic]
+  #[test]
+  fn test_invalid_numbers() {
+    GF::new(9);
+  }
+
+  // TEST: Addition
+  #[test]
+  fn test_add() {
+    // GF(3^2) | 0 + 1 = 1
+    assert_eq!(GF::new(0) + GF::new(1), GF::new(1));
+    // GF(3^2) | 1 + 1 = 2
+    assert_eq!(GF::new(1) + GF::new(1), GF::new(2));
+    // GF(3^2) | 1 + 2 = 0
+    assert_eq!(GF::new(1) + GF::new(2), GF::new(0));
+    // GF(3^2) | 2 + 2 = 1
+    assert_eq!(GF::new(2) + GF::new(2), GF::new(1));
+    // GF(3^2) | 1 + 3 = 4
+    assert_eq!(GF::new(1) + GF::new(3), GF::new(4));
+    // GF(3^2) | 2 + 3 = 5
+    assert_eq!(GF::new(2) + GF::new(3), GF::new(5));
+    // GF(3^2) | 3 + 3 = 6
+    assert_eq!(GF::new(3) + GF::new(3), GF::new(6));
+    // GF(3^2) | 2 + 4 = 3
+    assert_eq!(GF::new(2) + GF::new(4), GF::new(3));
+    // GF(3^2) | 4 + 4 = 8
+    assert_eq!(GF::new(4) + GF::new(4), GF::new(8));
+    // GF(3^2) | 2 + 7 = 6
+    assert_eq!(GF::new(2) + GF::new(7), GF::new(6));
+    // GF(3^2) | 6 + 7 = 4
+    assert_eq!(GF::new(6) + GF::new(7), GF::new(4));
+    // GF(3^2) | 8 + 8 = 4
+    assert_eq!(GF::new(8) + GF::new(8), GF::new(4));
+  }
+
+  // TEST: Subtraction
+  #[test]
+  fn test_sub() {
+    // GF(3^2) | 1 - 0 = 1
+    assert_eq!(GF::new(1) - GF::new(0), GF::new(1));
+    // GF(3^2) | 0 - 1 = 2
+    assert_eq!(GF::new(0) - GF::new(1), GF::new(2));
+    // GF(3^2) | 1 - 1 = 0
+    assert_eq!(GF::new(1) - GF::new(1), GF::new(0));
+    // GF(3^2) | 1 - 2 = 2
+    assert_eq!(GF::new(1) - GF::new(2), GF::new(2));
+    // GF(3^2) | 2 - 2 = 0
+    assert_eq!(GF::new(2) - GF::new(2), GF::new(0));
+    // GF(3^2) | 1 - 3 = 7
+    assert_eq!(GF::new(1) - GF::new(3), GF::new(7));
+    // GF(3^2) | 2 - 3 = 8
+    assert_eq!(GF::new(2) - GF::new(3), GF::new(8));
+    // GF(3^2) | 3 - 3 = 0
+    assert_eq!(GF::new(3) - GF::new(3), GF::new(0));
+    // GF(3^2) | 2 - 4 = 7
+    assert_eq!(GF::new(2) - GF::new(4), GF::new(7));
+    // GF(3^2) | 4 - 4 = 0
+    assert_eq!(GF::new(4) - GF::new(4), GF::new(0));
+    // GF(3^2) | 2 - 7 = 4
+    assert_eq!(GF::new(2) - GF::new(7), GF::new(4));
+    // GF(3^2) | 6 - 7 = 2
+    assert_eq!(GF::new(6) - GF::new(7), GF::new(2));
+    // GF(3^2) | 8 - 8 = 0
+    assert_eq!(GF::new(8) - GF::new(8), GF::new(0));
+  }
+
+  // TEST: Multiplication
+  #[test]
+  fn test_mul() {
+    // GF(3^2) | 0 * 1 = 0
+    assert_eq!(GF::new(0) * GF::new(1), GF::new(0));
+    // GF(3^2) | 0 * 2 = 0
+    assert_eq!(GF::new(0) * GF::new(2), GF::new(0));
+    // GF(3^2) | 1 * 1 = 1
+    assert_eq!(GF::new(1) * GF::new(1), GF::new(1));
+    // GF(3^2) | 1 * 2 = 2
+    assert_eq!(GF::new(1) * GF::new(2), GF::new(2));
+    // GF(3^2) | 2 * 2 = 1
+    assert_eq!(GF::new(2) * GF::new(2), GF::new(1));
+    // GF(3^2) | 2 * 3 = 6
+    assert_eq!(GF::new(2) * GF::new(3), GF::new(6));
+    // GF(3^2) | 3 * 3 = 2
+    assert_eq!(GF::new(3) * GF::new(3), GF::new(2));
+    // GF(3^2) | 2 * 4 = 8
+    assert_eq!(GF::new(2) * GF::new(4), GF::new(8));
+    // GF(3^2) | 3 * 4 = 5
+    assert_eq!(GF::new(3) * GF::new(4), GF::new(5));
+    // GF(3^2) | 4 * 4 = 6
+    assert_eq!(GF::new(4) * GF::new(4), GF::new(6));
+    // GF(3^2) | 2 * 7 = 5
+    assert_eq!(GF::new(2) * GF::new(7), GF::new(5));
+    // GF(3^2) | 6 * 7 = 8
+    assert_eq!(GF::new(6) * GF::new(7), GF::new(8));
+    // GF(3^2) | 8 * 8 = 6
+    assert_eq!(GF::new(8) * GF::new(8), GF::new(6));
+  }
+
+  // TEST: Division
+  #[test]
+  fn test_div() {
+    // GF(3^2) | 0 / 1 = 0
+    assert_eq!(GF::new(0) / GF::new(1), Ok(GF::new(0)));
+    // GF(3^2) | 0 / 2 = 0
+    assert_eq!(GF::new(0) / GF::new(2), Ok(GF::new(0)));
+    // GF(3^2) | 1 / 0 = ERROR
+    assert!(matches!(GF::new(1) / GF::new(0), Err(_)));
+    // GF(3^2) | 2 / 0 = ERROR
+    assert!(matches!(GF::new(2) / GF::new(0), Err(_)));
+    // GF(3^2) | 1 / 1 = 1
+    assert_eq!(GF::new(1) / GF::new(1), Ok(GF::new(1)));
+    // GF(3^2) | 1 / 2 = 2
+    assert_eq!(GF::new(1) / GF::new(2), Ok(GF::new(2)));
+    // GF(3^2) | 2 / 2 = 1
+    assert_eq!(GF::new(2) / GF::new(2), Ok(GF::new(1)));
+    // GF(3^2) | 2 / 3 = 3
+    assert_eq!(GF::new(2) / GF::new(3), Ok(GF::new(3)));
+    // GF(3^2) | 3 / 3 = 1
+    assert_eq!(GF::new(3) / GF::new(3), Ok(GF::new(1)));
+    // GF(3^2) | 1 / 4 = 5
+    assert_eq!(GF::new(1) / GF::new(4), Ok(GF::new(5)));
+    // GF(3^2) | 2 / 4 = 7
+    assert_eq!(GF::new(2) / GF::new(4), Ok(GF::new(7)));
+    // GF(3^2) | 3 / 4 = 8
+    assert_eq!(GF::new(3) / GF::new(4), Ok(GF::new(8)));
+    // GF(3^2) | 4 / 4 = 1
+    assert_eq!(GF::new(4) / GF::new(4), Ok(GF::new(1)));
+    // GF(3^2) | 1 / 7 = 5
+    assert_eq!(GF::new(1) / GF::new(7), Ok(GF::new(8)));
+    // GF(3^2) | 2 / 7 = 4
+    assert_eq!(GF::new(2) / GF::new(7), Ok(GF::new(4)));
+    // GF(3^2) | 6 / 7 = 5
+    assert_eq!(GF::new(6) / GF::new(7), Ok(GF::new(5)));
+    // GF(3^2) | 1 / 8 = 7
+    assert_eq!(GF::new(1) / GF::new(8), Ok(GF::new(7)));
+  }
+}
+</code></pre>
+<h3>Building and Testing</h3>
+<p>The above code can be built and tested the normal rust ways:</p>
+<pre><code>cargo test
+cargo build
+</code></pre>
+<h3>A <code>GF(p^k)</code> Calculator</h3>
+<p>Our calculator from the <code>GF(p)</code> implementation works for this new field also:</p>
+<pre><code class="language-shell">$ ./target/debug/gf_p_k_calc
+================================================================================
+A Calculator for GF(3^2)
+================================================================================
+
+Addition Table:
+
+   +  |   0    1    2    3    4    5    6    7    8  
+----------------------------------------------------
+   0  |   0    1    2    3    4    5    6    7    8  
+   1  |   1    2    0    4    5    3    7    8    6  
+   2  |   2    0    1    5    3    4    8    6    7  
+   3  |   3    4    5    6    7    8    0    1    2  
+   4  |   4    5    3    7    8    6    1    2    0  
+   5  |   5    3    4    8    6    7    2    0    1  
+   6  |   6    7    8    0    1    2    3    4    5  
+   7  |   7    8    6    1    2    0    4    5    3  
+   8  |   8    6    7    2    0    1    5    3    4  
+
+Subtraction Table:
+
+   -  |   0    1    2    3    4    5    6    7    8  
+----------------------------------------------------
+   0  |   0    2    1    6    8    7    3    5    4  
+   1  |   1    0    2    7    6    8    4    3    5  
+   2  |   2    1    0    8    7    6    5    4    3  
+   3  |   3    5    4    0    2    1    6    8    7  
+   4  |   4    3    5    1    0    2    7    6    8  
+   5  |   5    4    3    2    1    0    8    7    6  
+   6  |   6    8    7    3    5    4    0    2    1  
+   7  |   7    6    8    4    3    5    1    0    2  
+   8  |   8    7    6    5    4    3    2    1    0  
+
+Multiplication Table:
+
+   *  |   0    1    2    3    4    5    6    7    8  
+----------------------------------------------------
+   0  |   0    0    0    0    0    0    0    0    0  
+   1  |   0    1    2    3    4    5    6    7    8  
+   2  |   0    2    1    6    8    7    3    5    4  
+   3  |   0    3    6    2    5    8    1    4    7  
+   4  |   0    4    8    5    6    1    7    2    3  
+   5  |   0    5    7    8    1    3    4    6    2  
+   6  |   0    6    3    1    7    4    2    8    5  
+   7  |   0    7    5    4    2    6    8    3    1  
+   8  |   0    8    4    7    3    2    5    1    6  
+
+Division Table:
+
+   /  |   0    1    2    3    4    5    6    7    8  
+----------------------------------------------------
+   0  |   -    0    0    0    0    0    0    0    0  
+   1  |   -    1    2    6    5    4    3    8    7  
+   2  |   -    2    1    3    7    8    6    4    5  
+   3  |   -    3    6    1    8    5    2    7    4  
+   4  |   -    4    8    7    1    6    5    3    2  
+   5  |   -    5    7    4    3    1    8    2    6  
+   6  |   -    6    3    2    4    7    1    5    8  
+   7  |   -    7    5    8    6    2    4    1    3  
+   8  |   -    8    4    5    2    3    7    6    1  
+
+Enter any expression for evaluation (e.g. (1 + 2) * 4)
+
+&gt; 2 + 4
+3
+&gt; 2 * 4
+8
+&gt; 2*(1 + 3)
+8
+&gt; 2*1 + 2*3
+8
+&gt; 
+</code></pre>
+<p><i><u>Exercise:</u></i> Play around with the calculator.</p>
+<p><i><u>Exercise:</u></i> Try different parameters (e.g. <code>P = 2, K = 3, Q = 11 (x^3 + x^1 + 1)</code>). You can try other parameters too but be careful to ensure they are valid.</p>
+<p><i><u>Exercise:</u></i> Do your own implementation of <code>GF(p^k)</code> fields in your preferred programming language.</p>
+<h2>A Tool</h2>
+<p>Finally, we'll implement a useful little tool.</p>
+<h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/bin/poly_repr.rs"><code>src/bin/poly_repr.rs</code></a></h3>
+<p>Here is a simple tool to show the various representations of some number in <code>GF(p)[x]</code>.
+It accepts a coefficient field prime p and number in decimal-representation n and displays
+it in all the represeantations we've discussed.</p>
+<p>The most consistent and useful representation for doing calculations is the vector format.</p>
+<p>The polynomial representation is more verbose and inconsistent.
+Thus, we will generally avoid using it directly. But, it can be helpful to drop into polynomial
+arithmetic to understand something. In such cases, this tool can be helpful.</p>
+<div style="display: none">
+
+
+<pre><code class="language-rust">fn main() {
+  let args: Vec&lt;_&gt; = std::env::args().collect();
+  if args.len() != 3 {
+    eprintln!(&quot;usage: {} &lt;prime&gt; &lt;number&gt;&quot;, args[0]);
+    std::process::exit(1);
+  }
+
+  let p: u64 = args[1].parse().unwrap();
+  let mut num: u64 = args[2].parse().unwrap();
+
+  println!(&quot;Using GF({})[x]:&quot;, p);
+  println!(&quot;  Number:     {}&quot;, num);
+
+  // Decompose the number into a vector of coefficients
+  let mut coeffs = vec![];
+  if num == 0 { // Handle special case
+    coeffs.push(0);
+  }
+  while num &gt; 0 {
+    coeffs.push(num % p);
+    num /= p;
+  }
+
+  // Loop and print each coeff of the vector (in reverse order)
+  let mut first_term = true;
+  print!(&quot;  Vector:     [&quot;);
+  for i in (0..coeffs.len()).rev() {
+    // Special case: insert ',' punctuation only between present terms
+    if !first_term {
+      print!(&quot;, &quot;);
+    }
+    first_term = false;
+    // General case: print number
+    print!(&quot;{}&quot;, coeffs[i]);
+  }
+  println!(&quot;]&quot;);
+
+  // Loop and print each term of the polynomial (in reverse order)
+  let mut first_term = true;
+  print!(&quot;  Polynomial: &quot;);
+  for i in (0..coeffs.len()).rev() {
+    let c = coeffs[i];
+
+    // Special case: ignore terms that aren't present
+    if c == 0 {
+      continue;
+    }
+
+    // Special case: insert '+' punctuation only between present terms
+    if !first_term {
+      print!(&quot; + &quot;);
+    }
+    first_term = false;
+
+    // Special case: handle 1's coeff
+    if i == 0 {
+      print!(&quot;{}&quot;, c);
+      continue;
+    }
+
+    // General: handle x, x^2, x^3, etc
+
+    // Special case: don't print the '1' coeff, it is implied
+    if c != 1 {
+      print!(&quot;{}&quot;, c);
+    }
+
+    print!(&quot;x&quot;);
+
+    // Special case: don't print 'x^1', it is implied by 'x'
+    if i != 1 {
+      print!(&quot;^{}&quot;, i);
+    }
+  }
+  println!(&quot;&quot;);
+}
+</code></pre>
+
+
+</div>
+
+<h3>Usage</h3>
+<p>Here are a few usage examples:</p>
+<pre><code class="language-shell">$ ./target/debug/poly_repr 2 42
+Using GF(2)[x]:
+  Number:     42
+  Vector:     [1, 0, 1, 0, 1, 0]
+  Polynomial: x^5 + x^3 + x
+
+</code></pre>
+<pre><code class="language-shell">$ ./target/debug/poly_repr 3 42
+Using GF(3)[x]:
+  Number:     42
+  Vector:     [1, 1, 2, 0]
+  Polynomial: x^3 + x^2 + 2x
+
+</code></pre>
+<pre><code class="language-shell">$ ./target/debug/poly_repr 5 42
+Using GF(5)[x]:
+  Number:     42
+  Vector:     [1, 3, 2]
+  Polynomial: x^2 + 3x + 2
+
+</code></pre>
+<h3>Conclusion</h3>
+<p>Don't you love it when a plan comes together?</p>
+<p><img src="hannibal.jpg" width=300 /></p>
+<p>After this section, we're within striking distance of serious applications. In fact, you could tweak
+the parameters to <code>P = 2, K = 8, and Q = 283</code> and you'd have the Galois Field <code>GF(256)</code> that is used for
+AES and many other applications. But, our general-purpose <code>GF(p^k)</code> is overly general.</p>
+<p>In the next section, we'll discuss what I'll call <em>Computer Science Fields GF(2^k)</em></p>
+<p>It turns out that a lot of new insights and very handy optimizations come from constraining <code>P = 2</code></p>
+<p>Be a 1 and not a 0 (soon)</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

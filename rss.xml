@@ -5,6 +5,12 @@
   <link>https://www.xorvoid.com</link>
   <description>If you stare into the void long enough, you'll find some xors staring back</description>
 <item>
+  <title>Dis86: A decompiler for x86 16-bit real-mode binaries</title>
+  <link>https://www.xorvoid.com/dis86.html</link>
+  <description>Dis86: A decompiler for x86 16-bit real-mode binaries</description>
+  <pubDate>Wed, 27 Mar 2024 21:26:18 GMT</pubDate>
+</item>
+<item>
   <title>Random</title>
   <link>https://www.xorvoid.com/random.html</link>
   <description>Random</description>

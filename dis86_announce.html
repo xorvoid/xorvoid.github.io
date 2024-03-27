@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Dis86: A decompiler for x86 16-bit real-mode binaries</h1>
+<p>Today I'm publicly releasing a decompiler I've been building. Source code is (<a href="https://github.com/xorvoid/dis86">here</a>).</p>
+<p>I plan to document the internals here over a series of posts, but today's announcement will remain fairly high-level.</p>
+<h2>Backstory</h2>
+<p>Over the last year, I've been casually working on a reverse-engineering and reimplementation project of an old MS-DOS
+video-game that got me curious about science and engineering as a child. Along with this project has come all kinds of
+fascinating discoveries about this original IBM PC that I was too young to appreciate at the time. I've been intending
+to write publicly about all my discoveries for far too long.</p>
+<p>The most traditional tool used for this task is IDA Pro. Sadly they dropped x86 16-bit real mode support some time ago.
+And to complicate matters more, I use a Mac M1 Pro Aarch64 machine so I can't simply use some older version without
+resorting to a complicated emulation stack (argh). I tried Ghidra also at some point and found issues getting it to
+work for my needs.</p>
+<p>Being a very experienced systems engineer, it doesn't take much annoyance until you're seriously considering taking up the task of just building the thing you want from scratch. It's a curse. A curse I love.</p>
+<h2>Prehistoric version 1</h2>
+<p>The first version was a very simple 1-to-1 assembly instruction to C statement convertor.</p>
+<p>For example:</p>
+<table>
+<thead>
+<tr>
+<th>x86-16 Asm</th>
+<th>C Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>inc ax</code></td>
+<td><code>AX += 1;</code></td>
+</tr>
+<tr>
+<td><code>push bx</code></td>
+<td><code>PUSH(BX);</code></td>
+</tr>
+<tr>
+<td><code>leave</code></td>
+<td><code>SP = BP; BP = POP();</code></td>
+</tr>
+</tbody>
+</table>
+<p>The generated C-code then could execute instead of the original machine-code using a hybrid runtime I developed that
+switches between executing inside DosBox or on native Mac M1 Aarch64 depending on which functions have been decompiled
+or are still only available in the original machine code. I call this runtime <code>Hydra</code>. Hydra itself is
+an interesting systems engineering project and I plan to also release it someday (TBD).</p>
+<p>The typical reverse-engineering flow looked like:</p>
+<ol>
+<li>Identify an interesting function and where it is in the binary (e.g. from <code>0452:012a</code> to <code>0452:0151</code>)</li>
+<li>Run <code>dis86</code> to generate equivalent C-code</li>
+<li>Configure hydra to use this new code instead of the old machine code</li>
+<li>Verify it works identical to the original</li>
+<li>Begin refactoring the function: naming variables and introducing higher-level constructs.</li>
+<li>Goto 4 ... until satisfied</li>
+</ol>
+<p>You spend a lot of time in the 4-6 loop here. And there are obvious and not-so-obvious transformations that
+appear repeatedly that you quickly get sick of doing manually. You really want to focus on the less trivial parts
+such as understanding a data-structure or algorithm.</p>
+<p>Here are some examples:</p>
+<table>
+<thead>
+<tr>
+<th>Assembly pattern</th>
+<th>Semantic operation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>xor si,si</code></td>
+<td><code>SI = 0</code></td>
+</tr>
+<tr>
+<td><code>or bx,bx</code> <br/> <code>jne 0x234</code></td>
+<td><code>if (BX != 0) goto addr_234</code></td>
+</tr>
+<tr>
+<td><code>push ax</code> <br/> <code>call 0x356:0x78</code> <br/> <code>pop cx</code></td>
+<td><code>call function 0x356:0x78 with one argument (AX)</code></td>
+</tr>
+</tbody>
+</table>
+<p>You also want to recognize function parameters and local variables. Instead of accessing them with raw load/store
+instructions, you want to symbolize them and use ordinary assignment.</p>
+<p>Some examples of variables:</p>
+<table>
+<thead>
+<tr>
+<th>Assembly pattern</th>
+<th>Semantic operation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mov di,WORD PTR ss:[bp+0x6]</code></td>
+<td><code>DI = &lt;first function parameter&gt;</code></td>
+</tr>
+<tr>
+<td><code>les bx,DWORD PTR ss:[bp-0x6]</code></td>
+<td><code>ES:BX = &lt;local variable at offset -0x6&gt;</code></td>
+</tr>
+<tr>
+<td><code>mov WORD PTR ss:[bp-0x8],dx</code></td>
+<td><code>&lt;local variable at offset -0x8&gt; = DX</code></td>
+</tr>
+</tbody>
+</table>
+<p>And, you want to symbolize global variables and function calls.</p>
+<h2>Prehistoric version 2</h2>
+<p>So version 2 is born which does a handful of "peephole-style" transformations and symbolization.</p>
+<p>Example output:</p>
+<pre><code>#define _param_0006 ARG_16(0x6)
+#define _local_0002 LOCAL_16(0x2)
+#define _local_0008 LOCAL_16(0x8)
+#define _local_0006 LOCAL_32(0x6)
+#define _local_000a LOCAL_16(0xa)
+void func_00006b42__0622_0922(void)
+{
+  PUSH(BP);                                                // push   bp
+  BP = SP;                                                 // mov    bp,sp
+  SP -= 0xa;                                               // sub    sp,0xa
+  PUSH(SI);                                                // push   si
+  PUSH(DI);                                                // push   di
+  DI = _param_0006;                                        // mov    di,WORD PTR ss:[bp+0x6]
+  BX = DI;                                                 // mov    bx,di
+  BX &lt;&lt;= 0x2;                                              // shl    bx,0x2
+  AX = *PTR_16(DS, BX+0x946);                              // mov    ax,WORD PTR ds:[bx+0x946]
+  DX = *PTR_16(DS, BX+0x944);                              // mov    dx,WORD PTR ds:[bx+0x944]
+  *(u16*)((u8*)&amp;_local_0006 + 2) = AX;                     // mov    WORD PTR ss:[bp-0x4],ax
+  *(u16*)((u8*)&amp;_local_0006 + 0) = DX;                     // mov    WORD PTR ss:[bp-0x6],dx
+  SI = 0;                                                  // xor    si,si
+  goto label_00006b93;                                     // jmp    0x6b93
+
+ label_00006b64:
+  LOAD_SEG_OFF(ES, BX, _local_0006);                       // les    bx,DWORD PTR ss:[bp-0x6]
+                                                           // test   WORD PTR es:[bx],0x40
+  if ((*PTR_16(ES, BX) &amp; 0x40) == 0) goto label_00006b72;  // je     0x6b72
+  *PTR_16(ES, BX) ^= 0x50;                                 // xor    WORD PTR es:[bx],0x50
+
+ label_00006b72:
+  LOAD_SEG_OFF(ES, BX, _local_0006);                       // les    bx,DWORD PTR ss:[bp-0x6]
+  AX = *PTR_16(ES, BX);                                    // mov    ax,WORD PTR es:[bx]
+  _local_0002 = AX;                                        // mov    WORD PTR ss:[bp-0x2],ax
+                                                           // test   WORD PTR ss:[bp-0x2],0x14
+  if ((_local_0002 &amp; 0x14) != 0) goto label_00006b8e;      // jne    0x6b8e
+                                                           // push   WORD PTR ss:[bp-0x4]
+                                                           // push   bx
+                                                           // callf  0x581:0x496
+  F_vga_dyn_append(m, BX, (u16)(_local_0006&gt;&gt;16));         // add    sp,0x4
+
+ label_00006b8e:
+  // ... SNIP ...
+</code></pre>
+<p>The refactor iteration loop improves, but naturally we want more! In particular we want control-flow synthesis.</p>
+<p>For example:</p>
+<table>
+<thead>
+<tr>
+<th>Assembly pattern</th>
+<th>Pseudo C Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00006b80: jne 0x6b85</code><br/><code>00006b82: mov ax,1</code><br/><code>00006b85: ...</code></td>
+<td><code>if (&lt;something&gt; != 0) { AX = 1 }</code></td>
+</tr>
+<tr>
+<td><code>00006bcb: jmp 0x6bfc</code><br/><code>00006bcd: ...</code><br/><code>00006bfc: cmp si,0x42</code><br/><code>00006bff: jl 0x6bcd</code><br/><code>00006c01: ...</code></td>
+<td><code>while (SI &lt; 0x42) { ... }</code></td>
+</tr>
+<tr>
+<td><code>0000754c: jmp WORD PTR cs:[bx+0x1c]</code></td>
+<td><code>switch (&lt;val&gt;) { ... }</code></td>
+</tr>
+</tbody>
+</table>
+<p>These are not easy to infer in a decompiler architecture that lacks proper intermediate representations, so ultimately
+the decision was made to redesign from the bottom up. Which leads directly to the current form of dis86.</p>
+<h2>The inference problem</h2>
+<p>In many ways dis86 is just like any ordinary (forward) compiler. All compilers are tasked with translation from some
+source language to some destination language. In this case we have <code>source=x86-16</code> and <code>target=c-source-code</code>. This
+reality means that many established compiler design techniques can be used.</p>
+<p>However, on top of all the normal challenges of building a high-quality compiler, decompilers also have a complicated
+<code>"inference problem"</code> of trying to invert a function that is NOT a bijection! Control flow synthesis is a simple
+example of this:</p>
+<p>Consider:</p>
+<pre><code>void my_function_1() {
+  if (cond) {
+    // .... do thing
+    return;
+  }
+  // ... do another thing
+}
+</code></pre>
+<p>And:</p>
+<pre><code>void my_function_1() {
+  if (cond) {
+    // .... do thing
+  } else {
+    // ... do another thing
+  }
+}
+</code></pre>
+<p>These can both be compiled to the same machine code. But which ONE would that machine-code decompile to?</p>
+<p>The above is a very trivial example, but it demonstrates the principle of trying to invert a function that is not
+invertible. In reality, these problems can get very complicated quickly.</p>
+<p>Here's a more practical example you find in much x86-16 code:</p>
+<pre><code>000079c0 (074b:0510) |  55                    push   bp;
+000079c1 (074b:0511) |  8b ec                 mov    bp,sp;
+000079cb (074b:051b) |  9a fc 04 81 05        call   0x581:0x4fc;
+000079d0 (074b:0520) |  5d                    pop    bp;
+000079d1 (074b:0521) |  cb                    retf;
+</code></pre>
+<p>Does this function return a value? If so, where does it come from? Well, the calling conventions on this system
+return <code>u16</code> in <code>AX</code> and <code>u32</code> in <code>DX:AX</code>. But neither is set here. So is it a void function?</p>
+<p>Maybe.</p>
+<p>It could be:</p>
+<pre><code>void func_074b_0510() {
+  func_0581_04fc();
+}
+void func_0581_04fc() {
+  // ... body ...
+}
+</code></pre>
+<p>Or it could be:</p>
+<pre><code>u16 func_074b_0510() {
+  return func_0581_04fc();
+}
+u16 func_0581_04fc() {
+  // ... body ...
+}
+</code></pre>
+<p>Or it could be:</p>
+<pre><code>u32 func_074b_0510() {
+  return func_0581_04fc();
+}
+u32 func_0581_04fc() {
+  // ... body ...
+}
+</code></pre>
+<p>How do we decide? And this is just one case. A solution for this (e.g. whole program analysis) may not be sufficient for all such
+ambiguities. In the limit, complexity dominates.</p>
+<p>Many decompilers have to depend on various heuristics and assumptions to deal with the issue. In this sense, dis86 is
+no different. But, as a principle, we value producing code that executes correctly over code that maximizes readability.
+For the above case we'll depend on manual annotation unless a distinction can be made with certainty. Over time, we hope to
+improve this continually and/or make inference good at suggesting solutions to the operator. But, ultimately the operator
+is the ultimate driver.</p>
+<p>This is a trade-off that depends a lot on your application. If you're using a decompiler to simply read code and
+perform a security audit, then you may wish to trade some correctness for readability. If you find a security hole, you'll
+go read the machine-code directly to verify it anyways. But, if you're trying to semantically lift an entire binary into
+C code, then you instead worry about breaking some corner case in some infrequently executed code path.</p>
+<h2>Dis86 Design Overview</h2>
+<p>Finally we come to the overall internal structure of dis86.</p>
+<p>Dis86 is a series of transform steps over well-defined data-structures:</p>
+<ol>
+<li><b>Disassembly:</b> Raw binary is decoded into an in-memory representation of the instructions</li>
+<li><b>Basic blocks inference:</b> Detect basic block boundaries based on jmp instructions and targets</li>
+<li><b>Build SSA IR [1]:</b> Convert each instruction into one or more IR operations, inserting them into their respective basic-blocks</li>
+<li><b>Optimize IR:</b> xor reduction, or reduction, phi reduction, branch simplification, stack ptr accumulation, common-subexpression-elimination, value-propagation, deadcode-elimination, etc</li>
+<li><b>Symbolize and forward memory:</b> name parameters and locals, forward non-escaping memory, fuse upper/lower split addresses, etc</li>
+<li><b>Infer control flow:</b> Detect loops, if-stmt, and switch-stmts. Schedule basic-block ordering/placement and jump fall-through.</li>
+<li><b>Build an AST [2]:</b> Build an AST representing C code using the final IR and the Control Flow</li>
+<li><b>Generate C Code:</b> Walk the AST and emit the final C code</li>
+</ol>
+<p>Each of these intermediate steps can be inspected, which is very useful for debugging and development.</p>
+<h2>Next Steps</h2>
+<p>In future posts, we'll drill down into specific components in gory detail.</p>
+<p>If you'd like to learn more about this project, you can stay tuned to this blog via the rss feed (<a href="rss.xml">here</a>). And, feel free to review out the source code yourself on github (<a href="https://github.com/xorvoid/dis86">here</a>). If you find this interesting, you can also buy me a coffee (<a href="https://www.buymeacoffee.com/xorvoid">here</a>).</p>
+<h4>Appendix</h4>
+<p>
+<sup>[1] SSA IR: Static Single-Assignment Intermediate Representation ([wiki](https://en.wikipedia.org/wiki/Static_single-assignment_form))</sup>
+<sup>[2] AST: Abstract Syntax Tree ([wiki](https://en.wikipedia.org/wiki/Abstract_syntax_tree))</sup>
+</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

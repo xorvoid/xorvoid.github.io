@@ -5,6 +5,12 @@
   <link>https://www.xorvoid.com</link>
   <description>If you stare into the void long enough, you'll find some xors staring back</description>
 <item>
+  <title>On Garbage Collection</title>
+  <link>https://www.xorvoid.com/on_garbage_collection.html</link>
+  <description>On Garbage Collection</description>
+  <pubDate>Sat, 30 Mar 2024 23:56:27 GMT</pubDate>
+</item>
+<item>
   <title>Dis86: A decompiler for x86 16-bit real-mode binaries</title>
   <link>https://www.xorvoid.com/dis86.html</link>
   <description>Dis86: A decompiler for x86 16-bit real-mode binaries</description>

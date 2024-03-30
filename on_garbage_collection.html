@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>On Garbage Collection</h1>
+<p>So, <a href="https://bitbashing.io/gc-for-systems-programmers.html">this article</a> is trending on the top of <a href="https://news.ycombinator.com/item?id=39873692">Hacker News</a>. And while I'm pretty ambivalent about it, I've decided to
+not comment on the parts I think are short-sighted. Instead, its given me motivation to finally write up my feelings on
+the issue. I've been a systems programmer for a long-time and at this point, I'm quite sick of the Manual Memory Management vs Garbage Collection flamewars. Let's elevate the discourse.</p>
+<h2>Ubiquity</h2>
+<p>Here's the reality: we all use garbage-collection. And any sufficiently sophisticated system grows it's own form of garbage collection.</p>
+<p>Don't believe me? Let's take a tour:</p>
+<ul>
+<li>Filesystems garbage-collect dead-files / blocks to accelerate user response time</li>
+<li>When a linux process terminates, it's process state is collected.</li>
+<li>Dead-code elimination in compiler back-ends is <em>literally</em> the mark-and-sweep algorithm <a href="https://github.com/xorvoid/dis86/blob/main/src/ir/opt.rs#L287">link</a></li>
+<li>SSDs internally collect old blocks and migrate data out of band</li>
+<li>Linux kernel RCU mechanism is a garbage-collector (as the article points out)</li>
+<li>...etc etc etc...</li>
+</ul>
+<p>But the most damning example of all is reference-counted pointers:</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rust</td>
+<td><code>Rc&lt;&gt;</code> / <code>Arc&lt;&gt;</code></td>
+</tr>
+<tr>
+<td>C++</td>
+<td><code>shared_ptr&lt;&gt;</code></td>
+</tr>
+<tr>
+<td>C</td>
+<td><code>&lt;hand-rolled&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>But, those aren't <em>true garbage collection</em> you may quibble?</p>
+<p>Well, this paper argues that refcounting and garbage-collecting are two-sided to the same coin:
+<a href="https://web.eecs.umich.edu/~weimerw/2012-4610/reading/bacon-garbage.pdf">A Unified Theory of Garbage Collection</a></p>
+<p>The similarities are obvious to anyone who is willing to reflect for a moment. In a traditional garbage-collected programming language, it's quite easy to be sloppy about objects and not consider what owns what because the "garbage collector is magic". But, when one tries to write code in a language such as Rust or C++, they have to unlearn bad habits. Or do they? Can't they just slap an <code>Arc&lt;&gt;</code> or <code>shared_ptr&lt;&gt;</code> on everything and go back to "normal"? Sure they can. And it's called garbage collection.</p>
+<p>Ref-counting <em>is</em> garbage collection.</p>
+<h2>But why?</h2>
+<p>It turns out we absolutely need the garbage-collection concept whenever an object has &gt;1 independent owners.
+Each of these owners can operate independently without coordination and use the underlying object in any way they
+wish without restriction. Each may terminate at any time without coordination or consideration of any other owner.
+How do we ensure correctness? Garbage collection.</p>
+<p>To eschew garbage collection is to assert that every object can be owned by <em>Exactly One</em> owner. This restriction lets
+one get quite far, but has its limits. If you're writing pure C code and hit such an issue, you immediately start
+introducing an adhoc refcnt'ing solution. And, BAM, your C program now has a garbage collector!</p>
+<h2>The Distraction</h2>
+<p>The standard discussion is a big distraction from the actually interesting issues. Saying "garbage collectors suck" or "just use a garbage collector" is poor engineering.
+Instead we should consider: "what tools do we need in or belts to do good engineering?" And in particular: "Where should we put the garbage collectors when we need it?"</p>
+<h2>To be or not to be</h2>
+<p>A sensible reason to avoid garbage collectors in 2024 is simply.. simplicity. A high-quality, enterprise-grade garbage-collector is a complicated and sophisticated system that will fail in complicated and surprising ways. If 99.5% of your objects are owned by exactly one owner, is it worthwhile to add the burden of understanding and tuning a general-purpose garbage collector? Consider also that manual memory management has never been easier with modern languages (e.g. Rust).</p>
+<p>It's fair that many interesting systems-applications have been written in garbage-collected languages. I think Golang alone is proof of this assertion. In fact, golang does a clever thing to detect "exactly one owner" cases at compile-time
+using escape-analysis, so it can eliminate runtime garbage-collector work.</p>
+<p>Another example is the NASDAQ (ISLAND) matching-engine being written in Java. Though, I'm not sure that one is the best example, as they do a lot of pre-allocation and object-pooling to avoid the collector.</p>
+<h2>Conversations I <em>want</em> to have</h2>
+<p>The conversations I actually <em>want</em> to have are about what a sensible opt-in garbage-collector could look like in a systems programming language. To date I only know one popular language that has made an attempt at doing a hybrid: <a href="https://dlang.org/">The D Programming Language</a>. They draw a distinction between <code>class</code> objects being garbage-collected and <code>struct</code> objects being manually-managed. But, if you use the metric "how many times has an idea been copied?", then this idea hasn't been particularly successful.</p>
+<p>I would love to see more exploration in this area. What systems programmers tend to dislike is large complicated runtimes / frameworks that they can't control. Is it possible to have opt-in garbage-collection that doesn't need to control the entire runtime? What trade-offs does that require? Is it still usable or does it just drown in its own complexity? How far can one go in a pure "library" form-factor? How composable can it be with the rest of the language? Etc.. etc.. etc.</p>
+<p>But until then, we'll all just keep rolling our own adhoc collectors whenever we're faced with yet another <code>num_owners &gt; 1</code> problem.</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

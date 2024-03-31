@@ -79,7 +79,7 @@ one get quite far, but has its limits. If you're writing pure C code and hit suc
 introducing an adhoc refcnt'ing solution. And, BAM, your C program now has a garbage collector!</p>
 <h2>The Distraction</h2>
 <p>The standard discussion is a big distraction from the actually interesting issues. Saying "garbage collectors suck" or "just use a garbage collector" is poor engineering.
-Instead we should consider: "what tools do we need in or belts to do good engineering?" And in particular: "Where should we put the garbage collectors when we need it?"</p>
+Instead we should consider: "what tools do we need in or belts to do good engineering?" And in particular: "Where should we put the garbage collectors when we need them?"</p>
 <h2>To be or not to be</h2>
 <p>A sensible reason to avoid garbage collectors in 2024 is simply.. simplicity. A high-quality, enterprise-grade garbage-collector is a complicated and sophisticated system that will fail in complicated and surprising ways. If 99.5% of your objects are owned by exactly one owner, is it worthwhile to add the burden of understanding and tuning a general-purpose garbage collector? Consider also that manual memory management has never been easier with modern languages (e.g. Rust).</p>
 <p>It's fair that many interesting systems-applications have been written in garbage-collected languages. I think Golang alone is proof of this assertion. In fact, golang does a clever thing to detect "exactly one owner" cases at compile-time

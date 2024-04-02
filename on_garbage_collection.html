@@ -36,7 +36,7 @@ the issue. I've been a systems programmer for a long-time and at this point, and
 <ul>
 <li>Filesystems garbage-collect dead-files / blocks to accelerate user response time</li>
 <li>When a linux process terminates, it's process state is collected.</li>
-<li>Dead-code elimination in compiler back-ends is <em>literally</em> the mark-and-sweep algorithm (<a href="https://github.com/xorvoid/dis86/blob/main/src/ir/opt.rs#L287">example</a>)</li>
+<li>Dead-code elimination in compiler back-ends is <em>literally</em> the mark-and-sweep algorithm (<a href="https://github.com/xorvoid/dis86/blob/372f61532706b7bee11f727b2f78961247493cae/src/ir/opt.rs#L287">example</a>)</li>
 <li>SSDs internally collect old blocks and migrate data out of band</li>
 <li>Linux kernel RCU mechanism is a garbage-collector (as the article points out)</li>
 <li>...etc etc etc...</li>

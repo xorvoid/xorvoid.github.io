@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Hydra: A hybrid runtime for x86-16 and Aarch64</h1>
+<p>Today I'm publicly releasing a hybrid runtime I've been building alongside <a href="dis86.html">dis86</a> for
+doing reverse-engineering work. Source code is on github: <a href="https://github.com/xorvoid/hydra">here</a>.</p>
+<h2>But.. why?</h2>
+<p>As mentioned in my article on <a href="dis86.html">dis86</a>, I've been busying on a reverse-engineering and reimplementation
+project part-time for about a year now. The next problem after getting C code is validating whether that code actually
+performs the same computation as the original. When you're reversing a large binary, you can't simply wait for all
+the code to be reversed before starting a debugging cycle. Instead, you have to find ways to validate any changes
+iteratively. If you thought getting normal code well-tested was hard, try doing it on mystery machine code from a
+long-dead ISA.</p>
+<p>A standard approach here is to recompile the code back to original platform and link the recompiled code into the
+binary where the original machine-code exists. Along this path, folks start to value "recompilation accuracy", i.e. can
+you decompile and then recompile to the same machine code. Or, can it be similar? Can we use a binary diff to validate
+correctness of a decompile?</p>
+<p>These aren't easy answers, but on the x86-16 MS-DOS platform, it's harder still.</p>
+<h3>8086 Real-mode Address-space</h3>
+<p>For starters, the address-space is <em>small</em> and <em>weird</em>. Unlike modern machines that use a flat-address space, x86-16
+used segmented-addressing so they could build a 16-bit machine with an address-space larger than 16-bits. Wikipedia
+has a nice primer <a href="https://en.wikipedia.org/wiki/X86_memory_segmentation">here</a>.</p>
+<p>The upshot is that, despite addresses being specified fully as <code>abcd:efgh</code> (with 32-bits), they only actually address
+roughly 1 MB of space (technically 1.06 MB, lol). And then after than, many regions are reserved for memory-mapped hardware, BIOS routines, MS-DOS routines, etc.</p>
+<p>Thus, the total free application address-space was 640KB. To add some context, the IBM PC RGB VGA screen with 320x240
+resolution would require 225KB alone to store each pixel with 3 color bytes (1/3 of the address-space). Fortunately, it
+did not use this representation.</p>
+<p>There were two different call types: NEAR and FAR. The distinction depended on whether a function would only be
+called from the same code segment or not. A FAR function could not ever call a NEAR function in different segment.
+In modern parlance, we might call this a <a href="https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">function-coloring problem</a>.</p>
+<p>Engineers at the time got very clever with tricks. One example is the use of Overlays, also known as "poor man's
+virtual memory". Different code segments would be paged in and out of RAM at runtime using a segment remapping trick and
+a little bit of self modified code.</p>
+<p>Suffice to say that the x86-16 address space was heavily used and abused. Jamming more tricks into the mix in 2024 seems
+ill-advised.</p>
+<h3>Compilers</h3>
+<p>A number of different compilers existed at the time: Borland Turbo C++, Watcom, Datalight C, Visual C++, etc. Most of
+these are difficult to get a copy of these days. And, to my knowledge,  none of them were open-sourced at the time or after.
+In my project's case, it appears to be compiled by <code>Borland C++ - Copyright 1991 Borland Intl.</code></p>
+<p>Obtaining an old Borland compiler, getting it running on a modern machine, getting it to re-compile my C code, and linking into the existing binary with its
+address-space restrictions seemed far too complicated.</p>
+<h2>X86-16 Emulation and Hooks</h2>
+<p>Hydra is a hybrid runtime that can execute an application that is partially x86-16 machine code and partially aarch64 machine-code. It accomplishes
+this by using the <a href="https://dosbox-x.com/">dosbox-x</a> emulator to execute the x86-16 MS-DOS parts of the binary. To support native Aarch64 code,
+dosbox-x has been forked and patched to capture machine-state and provide hooks for Hydra to interrupt its execution at any x86-16 instruction address.</p>
+<h3>Function hooks</h3>
+<p>The main mechanism for integrating native Aarch64 code is by defining a function hook:</p>
+<pre><code class="language-c">HYDRA_FUNC(H_my_function)
+{
+  FRAME_ENTER(2);
+
+  u16 arg = ARG_16(0x6);
+
+  u16 result = F_some_other_function(m, arg);
+  if (result &gt; 1) {
+    AX = 4;
+  } else {
+    AX = 5;
+  }
+
+  FRAME_LEAVE();
+  RETURN_FAR();
+}
+
+void hook_init()
+{
+  HDYRA_REGISTER_ADDR(H_my_function, 0x0399, 0x0123);
+}
+</code></pre>
+<p>When the x86-16 emulator reaches address 0399:0123, Hydra will interrupt the execution and call the <code>H_my_function</code> routine above (running on Aarch64).</p>
+<p>This function can do pretty much anything to the x86-16 machine state:</p>
+<ul>
+<li>Modify x86-16 registers</li>
+<li>Modify x86-16 memory</li>
+<li>Call other x86-16 functions</li>
+<li>Return into arbitrary addresses</li>
+<li>Trigger an interrupt</li>
+<li>Read/write to an I/O port</li>
+<li>Make BIOS calls,</li>
+<li>... etc etc etc ...</li>
+</ul>
+<p>The call to <code>F_some_other_function</code> is an example of calling an arbitrary function.
+This function may be x86-16 machine code or may again be a hooked Hydra function compiled to native Aarch64.
+When the function reaches RETURN_FAR(), the Hydra Runtime will return back into the emulator using a retf equivalent return.</p>
+<h3>Annotations system</h3>
+<p>Hydra also provides an extensive annotations metadata system with supports defining:</p>
+<ul>
+<li>Function names</li>
+<li>Global variables</li>
+<li>Jump Tables in the text section</li>
+<li>Callstack configuration data</li>
+<li>(and eventually) struct definitions</li>
+</ul>
+<p>For example, one can access global variables (e.g. <code>G_some_global</code>) that map to the same memory as the x86-16:</p>
+<pre><code class="language-c">HYDRA_FUNC(H_my_function_2)
+{
+  FRAME_ENTER(0);
+
+  G_some_global = 42;
+
+  FRAME_LEAVE();
+  RETURN_FAR();
+}
+</code></pre>
+<h3>Callstack tracking</h3>
+<p>Because Hydra fully controls the execution of the hybrid machine and has extensive symbol metadata (e.g. function names), it can produce
+quality stack-traces at runtime:</p>
+<pre><code>Call Stack:
+  0  0000:0149 =&gt; 02e0:0b38 | (null) =&gt; main
+  1  02e0:0b82 =&gt; 02e0:000f | (null) =&gt; F_navigator
+  2  f7dc:0000 =&gt; 02e0:0619 | (null) =&gt; F_warehouse_run
+  3  f7dc:0001 =&gt; 0834:0ae9 | (null) =&gt; F_ent_update
+  4  0834:ff02 =&gt; 0834:01b6 | (null) =&gt; F_ent_next
+</code></pre>
+<p>These are very handy for finding and annotating interesting functions.</p>
+<h3>Limitations</h3>
+<p>Although this system is fairly capable, there are a few limitations:</p>
+<ul>
+<li>Hydra functions on Aarch64 each use their own stack and there is no way to escape local variable to x86-16 code</li>
+<li>Dosbox-x is unable to interrupt Aarch64 code: it must cooperate to allow opportunities for interrupts</li>
+<li>Hydra function execution will be viewed as a cpu suspend by x86-16 and any time-tracking via cycle counts will be under-reported</li>
+</ul>
+<h2>Conclusion</h2>
+<p>So far this approach has worked fairly well for the project's needs. As reusable software, it's unclear how flexible
+it is for other projects, but I think it's a fun technique that I wanted to share.</p>
+<p>If you'd like to learn more about this project, you can stay tuned to this blog via the rss feed (<a href="rss.xml">here</a>). And, feel free to review out the source code yourself on github (<a href="https://github.com/xorvoid/hydra">here</a>). If you find this interesting, you can also buy me a coffee (<a href="https://www.buymeacoffee.com/xorvoid">here</a>).</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

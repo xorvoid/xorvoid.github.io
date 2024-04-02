@@ -5,6 +5,12 @@
   <link>https://www.xorvoid.com</link>
   <description>If you stare into the void long enough, you'll find some xors staring back</description>
 <item>
+  <title>Hydra: A hybrid runtime for x86-16 and Aarch64</title>
+  <link>https://www.xorvoid.com/hydra.html</link>
+  <description>Hydra: A hybrid runtime for x86-16 and Aarch64</description>
+  <pubDate>Tue, 02 Apr 2024 20:08:38 GMT</pubDate>
+</item>
+<item>
   <title>On Garbage Collection</title>
   <link>https://www.xorvoid.com/on_garbage_collection.html</link>
   <description>On Garbage Collection</description>

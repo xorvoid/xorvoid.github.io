@@ -221,7 +221,7 @@ one register and into the least-significant register. Curious.</p>
 </code></pre>
 <p>So, sometimes with just do a simple division and return. Curious.</p>
 <h2>Decompiling</h2>
-<p>Let's decompile it with <a href="dis86.html">dis86</a> into C code, and doing a little manual cleanup:</p>
+<p>Let's decompile it with <a href="dis86.html">dis86</a> into C code. After doing a little manual cleanup, we have:</p>
 <pre><code class="language-c">HYDRA_FUNC(mystery_function)
 {
   #define _param_0006 *PTR_16(SS, SP + 0x4)
@@ -408,8 +408,8 @@ a side-effect. This can be a little jarring, but it's actually very helpful beca
 can easily thwart manual refactorings. Dis86 is a relatively new decompiler (as of April 2024), so this should improve
 a lot with more time.</p>
 <h2>Refactoring</h2>
-<p>With more cleanup we can reach the following version. Note that we tried to retain the connection to registers and the
-overall machine-code level state transfers.</p>
+<p>With more cleanup we can reach the following version. Note that I tried to retain the connection to registers and the
+overall machine-level state-transfers.</p>
 <p>From here, you should be able to understand what the function does:</p>
 <pre><code class="language-c">#define DIVMOD(quot, rem, dividend, divider) do { \
       quot = dividend / divider;                    \
@@ -505,7 +505,7 @@ HYDRA_FUNC(mystery_function)
     // The MSB that shifts out of DX:AX will shift into DI:SI
     SHUFFLE_LEFT(di_si, dx_ax);
 
-    // Value to small to divide it out.. keep shifting
+    // Value os too small to divide it out.. keep shifting
     if (di_si &lt; bp_bx) {
       continue;
     }

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Reversing a Mystery Function</h1>
+<p>One of my hobbies is reverse-engineering old binaries. I even wrote a custom decompiler to help me do it (<a href="dis86.html">here</a>).
+Reverse-engineering is something like doing a cross-word puzzle. You start with only a few small hints and each hint you solve
+gives you more information about the other hints. Eventually, the entire picture comes together. Here we have an excellent example of the process. And the result makes for a fun discovery.</p>
+<h2>The machine code</h2>
+<p>We start with this weird-looking x86-16 machine code.</p>
+<p>Any bets on what it does?</p>
+<pre><code>0000:03b2:  59                      pop    cx
+0000:03b3:  0e                      push   cs
+0000:03b4:  51                      push   cx
+0000:03b5:  33 c9                   xor    cx,cx
+0000:03b7:  eb 16                   jmp    0000:03cf
+0000:03b9:  59                      pop    cx
+0000:03ba:  0e                      push   cs
+0000:03bb:  51                      push   cx
+0000:03bc:  b9 01 00                mov    cx,0x1
+0000:03bf:  eb 0e                   jmp    0000:03cf
+0000:03c1:  59                      pop    cx
+0000:03c2:  0e                      push   cs
+0000:03c3:  51                      push   cx
+0000:03c4:  b9 02 00                mov    cx,0x2
+0000:03c7:  eb 06                   jmp    0000:03cf
+0000:03c9:  59                      pop    cx
+0000:03ca:  0e                      push   cs
+0000:03cb:  51                      push   cx
+0000:03cc:  b9 03 00                mov    cx,0x3
+0000:03cf:  55                      push   bp
+0000:03d0:  56                      push   si
+0000:03d1:  57                      push   di
+0000:03d2:  8b ec                   mov    bp,sp
+0000:03d4:  8b f9                   mov    di,cx
+0000:03d6:  8b 46 0a                mov    ax,WORD PTR ss:[bp+0xa]
+0000:03d9:  8b 56 0c                mov    dx,WORD PTR ss:[bp+0xc]
+0000:03dc:  8b 5e 0e                mov    bx,WORD PTR ss:[bp+0xe]
+0000:03df:  8b 4e 10                mov    cx,WORD PTR ss:[bp+0x10]
+0000:03e2:  0b c9                   or     cx,cx
+0000:03e4:  75 08                   jne    0000:03ee
+0000:03e6:  0b d2                   or     dx,dx
+0000:03e8:  74 69                   je     0000:0453
+0000:03ea:  0b db                   or     bx,bx
+0000:03ec:  74 65                   je     0000:0453
+0000:03ee:  f7 c7 01 00             test   di,0x1
+0000:03f2:  75 1c                   jne    0000:0410
+0000:03f4:  0b d2                   or     dx,dx
+0000:03f6:  79 0a                   jns    0000:0402
+0000:03f8:  f7 da                   neg    dx
+0000:03fa:  f7 d8                   neg    ax
+0000:03fc:  83 da 00                sbb    dx,0x0
+0000:03ff:  83 cf 0c                or     di,0xc
+0000:0402:  0b c9                   or     cx,cx
+0000:0404:  79 0a                   jns    0000:0410
+0000:0406:  f7 d9                   neg    cx
+0000:0408:  f7 db                   neg    bx
+0000:040a:  83 d9 00                sbb    cx,0x0
+0000:040d:  83 f7 04                xor    di,0x4
+0000:0410:  8b e9                   mov    bp,cx
+0000:0412:  b9 20 00                mov    cx,0x20
+0000:0415:  57                      push   di
+0000:0416:  33 ff                   xor    di,di
+0000:0418:  33 f6                   xor    si,si
+0000:041a:  d1 e0                   shl    ax,0x1
+0000:041c:  d1 d2                   rcl    dx,0x1
+0000:041e:  d1 d6                   rcl    si,0x1
+0000:0420:  d1 d7                   rcl    di,0x1
+0000:0422:  3b fd                   cmp    di,bp
+0000:0424:  72 0b                   jb     0000:0431
+0000:0426:  77 04                   ja     0000:042c
+0000:0428:  3b f3                   cmp    si,bx
+0000:042a:  72 05                   jb     0000:0431
+0000:042c:  2b f3                   sub    si,bx
+0000:042e:  1b fd                   sbb    di,bp
+0000:0430:  40                      inc    ax
+0000:0431:  e2 e7                   loop   0000:041a
+0000:0433:  5b                      pop    bx
+0000:0434:  f7 c3 02 00             test   bx,0x2
+0000:0438:  74 06                   je     0000:0440
+0000:043a:  8b c6                   mov    ax,si
+0000:043c:  8b d7                   mov    dx,di
+0000:043e:  d1 eb                   shr    bx,0x1
+0000:0440:  f7 c3 04 00             test   bx,0x4
+0000:0444:  74 07                   je     0000:044d
+0000:0446:  f7 da                   neg    dx
+0000:0448:  f7 d8                   neg    ax
+0000:044a:  83 da 00                sbb    dx,0x0
+0000:044d:  5f                      pop    di
+0000:044e:  5e                      pop    si
+0000:044f:  5d                      pop    bp
+0000:0450:  ca 08 00                retf   0x8
+0000:0453:  f7 f3                   div    dx,ax,bx
+0000:0455:  f7 c7 02 00             test   di,0x2
+0000:0459:  74 01                   je     0000:045c
+0000:045b:  92                      xchg   dx,ax
+0000:045c:  33 d2                   xor    dx,dx
+0000:045e:  eb ed                   jmp    0000:044d
+</code></pre>
+<h2>Entry stubs</h2>
+<p>A first observation is that we have a series of "entry stubs" of the form:</p>
+<pre><code>0000:03b2:  59                      pop    cx
+0000:03b3:  0e                      push   cs
+0000:03b4:  51                      push   cx
+0000:03b5:  &lt;....&gt;                  &lt;set cx to some value&gt;
+0000:03b7:  eb 16                   jmp    0000:03cf
+</code></pre>
+<p>In addition, elsewhere in the binary we have all the following calls:</p>
+<pre><code>call  0000:03b2
+callf 0000:03b5
+call  0000:03b9
+callf 0000:03bc
+call  0000:03c1
+callf 0000:03c4
+call  0000:03c9
+callf 0000:03cc
+</code></pre>
+<p>But no calls to <code>0000:03cf</code> directly. Instead these 8 stubs are different entry points for the core
+routine implemented from <code>0000:03cf</code>.</p>
+<p>This part of each stub is a "near call entry" for a "far call function":</p>
+<pre><code>0000:03b2:  59                      pop    cx
+0000:03b3:  0e                      push   cs
+0000:03b4:  51                      push   cx
+</code></pre>
+<p>Basically: (1) save near-call return offset to CX, (2) push the code-segment CS, (3) push offset back to stack</p>
+<p>This sequence allows the caller to perform a near call (<code>call</code>) and the implementation function to return with a
+far return (<code>retf</code>).</p>
+<p>If this is confusing, just ignore it. Near and far calls are a special beast specific only to x86-16.</p>
+<p>So, we have 4 actual "versions" of the call:</p>
+<table>
+<thead>
+<tr>
+<th>Mode (CX)</th>
+<th>Near Call</th>
+<th>Far Call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>0000:03b2</code></td>
+<td><code>0000:03b5</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>0000:03b9</code></td>
+<td><code>0000:03bc</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>0000:03c1</code></td>
+<td><code>0000:03c4</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>0000:03c9</code></td>
+<td><code>0000:03cc</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Core Implementation Inspection</h2>
+<p>The core routine is implemented from <code>0000:03cf</code> to <code>0000:0460</code>. We turn our attention to that section now.</p>
+<p>After further inspection, it seems that this is probably a hand-coded or hand-optimized assembly routine:</p>
+<ol>
+<li>Passing an argument in CX is not part of the normal calling-conventions</li>
+<li>Typical function prologue is <code>push BP; mov SP,BP</code> with no other stack operations between. This causes the first parameter to be loaded from <code>SS:BP+0xa</code> rather than the more typical <code>SS:BP+0x6</code></li>
+<li>Almost halfway through the function, it starts using the frame-pointer <code>BP</code> as an ordinary register with <code>mov BP,CX</code>.
+   Emitting a frame-pointer is a well-known optimization, but clobbering the frame-pointer halfway through is.. umm.. lesser known.</li>
+</ol>
+<p>Here's an interesting sequence:</p>
+<pre><code>0000:041a:  d1 e0                   shl    ax,0x1
+0000:041c:  d1 d2                   rcl    dx,0x1
+0000:041e:  d1 d6                   rcl    si,0x1
+0000:0420:  d1 d7                   rcl    di,0x1
+</code></pre>
+<p>The <code>rcl</code> instruction rotates left including the Carry Flag (<code>CF</code>). So this is shifting most-significant bits out of
+one register and into the least-significant register. Curious.</p>
+<p>Finally, we see these checks early in the function:</p>
+<pre><code>0000:03e6:  0b d2                   or     dx,dx
+0000:03e8:  74 69                   je     0000:0453
+0000:03ea:  0b db                   or     bx,bx
+0000:03ec:  74 65                   je     0000:0453
+</code></pre>
+<p>Jumping to:</p>
+<pre><code>0000:0453:  f7 f3                   div    dx,ax,bx
+0000:0455:  f7 c7 02 00             test   di,0x2
+0000:0459:  74 01                   je     0000:045c
+0000:045b:  92                      xchg   dx,ax
+0000:045c:  33 d2                   xor    dx,dx
+0000:045e:  eb ed                   jmp    0000:044d
+</code></pre>
+<p>Which just returns:</p>
+<pre><code>0000:044d:  5f                      pop    di
+0000:044e:  5e                      pop    si
+0000:044f:  5d                      pop    bp
+0000:0450:  ca 08 00                retf   0x8
+</code></pre>
+<p>So, sometimes with just do a simple division and return. Curious.</p>
+<h2>Decompiling</h2>
+<p>Let's decompile it with <a href="dis86.html">dis86</a> into C code, and doing a little manual cleanup:</p>
+<pre><code class="language-c">HYDRA_FUNC(mystery_function)
+{
+  #define _param_0006 *PTR_16(SS, SP + 0x4)
+  #define _param_0008 *PTR_16(SS, SP + 0x6)
+  #define _param_000a *PTR_16(SS, SP + 0x8)
+  #define _param_000c *PTR_16(SS, SP + 0xa)
+
+  u16 ax_2, dx_2, bx_2, cx_2, dx_25, ax_19, di_18, bx_17, dx_24, ax_18, di_8, bp_3, cx_14, di_10, si_4, dx_10, ax_5, ax_6, dx_11, si_5, di_11, di_19, si_14, ax_20, cx_12, ax_21, dx_28, bx_12, dx_16, ax_12, ax_22;
+  u16 tmp_0, tmp_1;
+
+  u32 tmp_u32;
+  u64 tmp_u64;
+
+  ax_2 = _param_0006;
+  dx_2 = _param_0008;
+  bx_2 = _param_000a;
+  cx_2 = _param_000c;
+
+  if (cx_2 != 0) {
+    goto addr_03ee;
+  }
+
+  if (dx_2 == 0 || bx_2 == 0) {
+    tmp_0 = MAKE_32(dx_2, ax_2) / bx_2;
+    tmp_1 = MAKE_32(dx_2, ax_2) % bx_2;
+    if ((CX &amp; 2) == 0) {
+      ax_22 = tmp_0;
+    } else {
+      ax_22 = tmp_1;
+    }
+    dx_16 = 0;
+    ax_12 = ax_22;
+    goto ret;
+  } else {
+    goto addr_03ee;
+  }
+
+ addr_03ee:;
+  if ((CX &amp; 1) != 0) {
+    bx_17 = bx_2;
+    dx_24 = dx_2;
+    ax_18 = ax_2;
+    di_8 = CX;
+    bp_3 = cx_2;
+  } else {
+    if (((dx_2 &gt;&gt; 15) != 0) == 0) {
+      dx_25 = dx_2;
+      ax_19 = ax_2;
+      di_18 = CX;
+    } else {
+      /* MANUALLY IMPLEMENTED: ... 32-bit negation impl ....
+         0000:03f8: f7 da                   neg    dx
+         0000:03fa: f7 d8                   neg    ax
+         0000:03fc: 83 da 00                sbb    dx,0x0
+      */
+      tmp_u32 = -MAKE_32(dx_2, ax_2);
+      dx_25 = (u16)(tmp_u32 &gt;&gt; 16);
+      ax_19 = (u16)tmp_u32;
+
+      di_18 = CX | 12;
+    }
+
+    if (((cx_2 &gt;&gt; 15) != 0) == 0) {
+      bx_17 = bx_2;
+      dx_24 = dx_25;
+      ax_18 = ax_19;
+      di_8 = di_18;
+      bp_3 = cx_2;
+    } else {
+      /* MANUALLY IMPLEMENTED: ... 32-bit negation impl ....
+         0000:0406: f7 d9                   neg    cx
+         0000:0408: f7 db                   neg    bx
+         0000:040a: 83 d9 00                sbb    cx,0x0
+         0000:0410: 8b e9                   mov    bp,cx
+      */
+      tmp_u32 = -MAKE_32(cx_2, bx_2);
+      bp_3 = (u16)(tmp_u32 &gt;&gt; 16);
+      bx_17 = (u16)tmp_u32;
+
+      dx_24 = dx_25;
+      ax_18 = ax_19;
+      di_8 = di_18 ^ 4;
+    }
+  }
+
+  cx_14 = 32;
+  di_10 = 0;
+  si_4 = 0;
+  dx_10 = dx_24;
+  ax_5 = ax_18;
+
+  while (1) {
+  addr_041a:;
+    /* MANUALLY IMPLEMENTED: ... 64-bit left-shifting ...
+       0000:041a:   d1 e0                   shl    ax,0x1
+       0000:041c:   d1 d2                   rcl    dx,0x1
+       0000:041e:   d1 d6                   rcl    si,0x1
+       0000:0420:   d1 d7                   rcl    di,0x1
+    */
+    tmp_u64 = MAKE_64(MAKE_32(di_10, si_4), MAKE_32(dx_10, ax_5));
+    tmp_u64 &lt;&lt;= 1;
+    // unpack back to 16-bit registers
+    ax_6  = (u16)(tmp_u64 &gt;&gt; 0);
+    dx_11 = (u16)(tmp_u64 &gt;&gt; 16);
+    si_5  = (u16)(tmp_u64 &gt;&gt; 32);
+    di_11 = (u16)(tmp_u64 &gt;&gt; 48);
+
+    if (di_11 &lt; bp_3) {
+      di_19 = di_11;
+      si_14 = si_5;
+      ax_20 = ax_6;
+      goto addr_0431;
+    }
+    if (di_11 &gt; bp_3) {
+      goto addr_042c;
+    }
+    if (si_5 &lt; bx_17) {
+      di_19 = di_11;
+      si_14 = si_5;
+      ax_20 = ax_6;
+      goto addr_0431;
+    }
+  addr_042c:;
+    /* MANUALLY IMPLEMENTED: ... 32-bit subtraction ...  (DI:SI) -= (BP:BX)
+       0000:042c:   2b f3                   sub    si,bx
+       0000:042e:   1b fd                   sbb    di,bp
+    */
+    tmp_u32 = MAKE_32(di_11, si_5) - MAKE_32(bp_3, bx_17);
+    di_19 = (u16)(tmp_u32 &gt;&gt; 8);
+    si_14 = (u16)(tmp_u32 &gt;&gt; 0);
+
+    ax_20 = ax_6 + 1;
+  addr_0431:;
+    cx_12 = cx_14 - 1;
+    if (cx_12 == 0) {
+      goto addr_0433;
+    }
+    cx_14 = cx_12;
+    di_10 = di_19;
+    si_4 = si_14;
+    dx_10 = dx_11;
+    ax_5 = ax_20;
+    goto addr_041a;
+  }
+addr_0433:;
+  if ((di_8 &amp; 2) == 0) {
+    ax_21 = ax_20;
+    dx_28 = dx_11;
+    bx_12 = di_8;
+    goto addr_0440;
+  }
+  ax_21 = si_14;
+  dx_28 = di_19;
+  bx_12 = di_8 &gt;&gt; 1;
+
+ addr_0440:;
+  if ((bx_12 &amp; 4) == 0) {
+    dx_16 = dx_28;
+    ax_12 = ax_21;
+  } else {
+    /* MANUALLY IMPLEMENTED ... 32-bit negation impl .... -(DX:AX)
+       0000:0446:   f7 da                   neg    dx
+       0000:0448:   f7 d8                   neg    ax
+       0000:044a:   83 da 00                sbb    dx,0x0
+    */
+    tmp_u32 = -MAKE_32(dx_28, ax_21);
+    dx_16 = (u16)(tmp_u32 &gt;&gt; 16);
+    ax_12 = (u16)tmp_u32;
+  }
+
+ ret:;
+  DX = dx_16;
+  AX = ax_12;
+  RETURN_FAR();
+
+  #undef _param_0006
+  #undef _param_0008
+  #undef _param_000a
+  #undef _param_000c
+}
+</code></pre>
+<p>NOTE: Dis86 can be a little verbose at times due to it's internal SSA form that creates a lot of unique variables as
+a side-effect. This can be a little jarring, but it's actually very helpful because it prevents variable aliasing that
+can easily thwart manual refactorings. Dis86 is a relatively new decompiler (as of April 2024), so this should improve
+a lot with more time.</p>
+<h2>Refactoring</h2>
+<p>With more cleanup we can reach the following version. Note that we tried to retain the connection to registers and the
+overall machine-code level state transfers.</p>
+<p>From here, you should be able to understand what the function does:</p>
+<pre><code class="language-c">#define DIVMOD(quot, rem, dividend, divider) do { \
+      quot = dividend / divider;                    \
+      rem  = dividend % divider;                    \
+  } while(0)
+
+#define SHUFFLE_LEFT(high_32, low_32) do { \
+    u64 tmp_u64 = MAKE_64(high_32, low_32); \
+    tmp_u64 &lt;&lt;= 1; \
+    high_32 = (u32)(tmp_u64 &gt;&gt; 32); \
+    low_32 = (u32)(tmp_u64 &gt;&gt; 0); \
+  } while (0)
+
+HYDRA_FUNC(mystery_function)
+{
+  // Mode param is passed in CX
+  u16 cx_mode = CX;
+
+  // Move mode to DI (to make room for params)
+  u16 di_mode = cx_mode;
+
+  // Load parameters
+  u16 ax_param_1 = *PTR_16(SS, SP + 0x4); // Typically in AX
+  u16 dx_param_2 = *PTR_16(SS, SP + 0x6); // Typically in DX
+  u16 bx_param_3 = *PTR_16(SS, SP + 0x8); // Typically in BX
+  u16 cx_param_4 = *PTR_16(SS, SP + 0xa); // Typically in CX
+
+  // Number to divide (dividend) in DX:AX
+  u32 dx_ax = MAKE_32(dx_param_2, ax_param_1);
+
+  // Divisor in CX:BX
+  u32 cx_bx = MAKE_32(cx_param_4, bx_param_3);
+
+  // Special case: cx_param_4 == 0 implies that the divisor fits in 16-bits.
+  // If dx_param_2 == 0, then both fit in 16-bits and we can just use the normal
+  // 8086 divide instruction. If bx_param_3 == 0 then we have a divisor that is 0
+  // and we want to execute the divide instruction to trigger a divide by zero fault.
+  // Note: In both of these cases, using the unsigned division instruction is perfectly acceptable.
+
+  if (cx_param_4 == 0 &amp;&amp; (dx_param_2 == 0 || bx_param_3 == 0)) {
+    // The DIV instruction computes both the quotient and remainder at once
+    u16 ax_quot, dx_rem;
+    DIVMOD(ax_quot, dx_rem, dx_ax, bx_param_3);
+
+    // mode &amp; 0x2 =&gt; return the remainder
+    if (di_mode &amp; 0x2) {
+      dx_ax = (u32)dx_rem;
+    } else {
+      dx_ax = (u32)ax_quot;
+    }
+    goto ret;
+  }
+
+  // !(mode &amp; 0x1) =&gt; perform signed division
+  if (!(di_mode &amp; 0x1)) {
+    // DX:AX (num) is negative?
+    if ((i32)dx_ax &lt; 0) {
+      // Negate it so we can treated it as unsigned
+      dx_ax = -dx_ax;
+      // Record in the mode so we can fix it up at the end
+      di_mode |= 0xc; // negate both a quot and rem result
+    }
+
+    // DX:AX (div) is negative?
+    if ((i32)cx_bx &lt; 0) {
+      // Negate it so we can treated it as unsigned
+      cx_bx = -cx_bx;
+      // Record in the mode so we can fix it up at the end
+      di_mode ^= 0x4; // negate a quot result only if both num &amp; div are not negative (xor cancels the negations)
+    }
+  }
+
+  // The loop need to use the CX register for the LOOP instruction, so
+  // we need to shuffle the contents elsewhere. The frame-pointer (BP) was selected.
+  // This an interesting choice and a strong hint the routine was hand-coded because
+  // typically it's an off-limits register (especially as this function is totally using
+  // it as a proper frame-pointer during param loading!)
+  u32 bp_bx = cx_bx;
+
+  // DI is also shuffled to the stack for the duration of the loop
+
+  // DI:SI is used a scratch register that we slowly shift bits into
+  u32 di_si = 0;
+  for (u16 cx_loop_cnt = 32; cx_loop_cnt != 0; cx_loop_cnt--) {
+    /* ORIGINAL ... 64-bit left-shifting via rcl chaining through the Carry Flag
+       0000:041a:   d1 e0                   shl    ax,0x1
+       0000:041c:   d1 d2                   rcl    dx,0x1
+       0000:041e:   d1 d6                   rcl    si,0x1
+       0000:0420:   d1 d7                   rcl    di,0x1
+    */
+
+    // Shuffle bits in DI:SI and DX:AX left
+    // The MSB that shifts out of DX:AX will shift into DI:SI
+    SHUFFLE_LEFT(di_si, dx_ax);
+
+    // Value to small to divide it out.. keep shifting
+    if (di_si &lt; bp_bx) {
+      continue;
+    }
+
+    // Great! We can subtract off a divisor and update the quotient in the newly available bit in DX:AX
+    di_si -= bp_bx;
+    dx_ax++;
+  }
+
+  // At this point, we have the quotient in DX:AX and the remainder in DI:SI
+  // Notice that we no longer need BP:BX (the divisor)
+
+  // Before the loop, the mode is pushed from DI, afterwards its popped into BX
+  u16 bx_mode = di_mode;
+
+  // mode &amp; 0x2 =&gt; return the remainder
+  if (bx_mode &amp; 0x2) {
+    dx_ax = di_si;
+    bx_mode &gt;&gt;= 1;
+  }
+
+  // mode &amp; 0x8 =&gt; negate remainder result
+  // mode &amp; 0x4 =&gt; negate quotient result
+  if (bx_mode &amp; 0x4) {
+    /* ORIGINAL: ... 32-bit negation impl ....
+       0000:0446:   f7 da                   neg    dx
+       0000:0448:   f7 d8                   neg    ax
+     0000:044a: 83 da 00                sbb    dx,0x0
+    */
+    dx_ax = -dx_ax;
+  }
+
+ ret:;
+  /* Return 32-bits in DX:AX */
+  DX = UPPER_16(dx_ax);
+  AX = LOWER_16(dx_ax);
+  RETURN_FAR();
+}
+</code></pre>
+<h2>Explanation</h2>
+<p>The mystery function implements divmod for 32-bits on an <code>x86-16</code> machine!</p>
+<p>The machine has a native <code>DIV</code> instruction:</p>
+<table>
+<thead>
+<tr>
+<th>Opcode</th>
+<th>Mnemonic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F7 /6</td>
+<td>DIV r/m16</td>
+<td>Unsigned divide DX:AX by r/m16, with result stored in AX = Quotient, DX = Remainder.</td>
+</tr>
+</tbody>
+</table>
+<p>The instruction takes a 32-bit dividend in <code>DX:AX</code> and a 16-bit divider as <code>r/m16</code>, so this alone isn't sufficient to
+implement division between two 32-bit values as required by ordinary C code.</p>
+<p>The core of this routine is the loop of 32, shifting one bit at a time. This is clever way to implement divmod.</p>
+<h3>Example:</h3>
+<p>Let's demonstrate the division algorithm by example, implementing 8-bit divisions.</p>
+<pre><code>let
+  num = 43
+  div = 3
+
+we want to compute
+  num / div = 14 rem 1
+</code></pre>
+<p>Convert to 8-bit binary:</p>
+<pre><code>num  = 00101011 (43)
+div  = 00000011 (3)
+</code></pre>
+<p>Form a 16-bit <code>&lt;0,num&gt;</code> scratch value:</p>
+<pre><code>scratch = 00000000_00101011
+</code></pre>
+<hr/>
+
+<p>Step 1a: Shift up scratch until the upper 8-bits are greater than or equal to <code>div</code>:</p>
+<pre><code>scratch = 00000101_01100000 (5 shifts)
+</code></pre>
+<p>Step 1b: Subtract <code>div = 00000011</code> off upper and add 1 to lower:</p>
+<pre><code>scratch = 00000010_01100000 + 1
+</code></pre>
+<hr/>
+
+<p>Step 2a: Shift up scratch until the upper 8-bits are greater than or equal to <code>div</code>:</p>
+<pre><code>scratch = 00000100_11000010 (1 shift)
+</code></pre>
+<p>Step 2b: Subtract <code>div = 00000011</code> off upper and add 1 to lower:</p>
+<pre><code>scratch = 00000001_11000010 + 1
+</code></pre>
+<hr/>
+
+<p>Step 3a: Shift up scratch until the upper 8-bits are greater than or equal to <code>div</code>:</p>
+<pre><code>scratch = 00000011_10000110 (1 shift)
+</code></pre>
+<p>Step 3b: Subtract <code>div = 00000011</code> off upper and add 1 to lower:</p>
+<pre><code>scratch = 00000000_10000110 + 1
+</code></pre>
+<hr/>
+
+<p>Step 4: Shift up scratch until done</p>
+<pre><code>scratch = 00000001_00001110 (shift 1)
+</code></pre>
+<hr/>
+
+<p>Finally we unpack the scratch as <code>&lt;rem,quot&gt;</code>:</p>
+<pre><code>rem  = 00000001 (1)
+quot = 00001110 (14)
+</code></pre>
+<p>And we have the desired result.</p>
+<p>To see this another way, we are forming the quotient as a decomposition of shifts/powers-of-two:</p>
+<pre><code>quot = (shift 5 and add 1) + (shift 1 and add 1) + (shift 1 and add 1)
+     = 2**(8-5) + 2**(8-5-1) + 2**(8-5-1-1)
+     = 2**3 + 2**2 + 2**1
+     = 8 + 4 + 2
+     = 14
+</code></pre>
+<p>Or in a more traditional lens:</p>
+<pre><code>num_0, quot_0 = 43,  0
+num_1, quot_1 = 43,  0  (try to subtract 3*(2**7) = 3*128 = 384)
+num_2, quot_2 = 43,  0  (try to subtract 3*(2**6) = 3*64  = 192)
+num_3, quot_3 = 43,  0  (try to subtract 3*(2**5) = 3*32  = 96)
+num_4, quot_4 = 43,  0  (try to subtract 3*(2**4) = 3*16  = 48)
+num_5, quot_5 = 19,  8  (try to subtract 3*(2**3) = 3*8   = 24)
+num_6, quot_6 =  7, 12  (try to subtract 3*(2**2) = 3*4   = 12)
+num_7, quot_7 =  1, 14  (try to subtract 3*(2**1) = 3*2   = 6)
+num_8, quot_8 =  1, 14  (try to subtract 3*(2**0) = 3*1   = 3)
+</code></pre>
+<p>Try running through some examples yourself if you want to fully understand.</p>
+<h2>Core Algorithm</h2>
+<p>Our function implements the same algorithm as the example, but over 32-bits rather than 8-bits. This means it
+needs a 64-bit shift on a 16-bit machine :-)</p>
+<p>The core algorithm is here:</p>
+<pre><code class="language-c">// DI:SI is used a scratch register that we slowly shift bits into
+u32 di_si = 0;
+for (u16 cx_loop_cnt = 32; cx_loop_cnt != 0; cx_loop_cnt--) {
+  // The MSB that shifts out of DX:AX will shift into DI:SI
+  SHUFFLE_LEFT(di_si, dx_ax);
+
+  // Value to small to divide it out.. keep shifting
+  if (di_si &lt; bp_bx) {
+    continue;
+  }
+
+  // Great! We can subtract off a divisor and update the quotient in the newly available bit in DX:AX
+  di_si -= bp_bx;
+  dx_ax++;
+}
+</code></pre>
+<h2>Special Case</h2>
+<p>Let's return to the special case with the <code>DIV</code> instruction:</p>
+<pre><code class="language-c">if (cx_param_4 == 0 &amp;&amp; (dx_param_2 == 0 || bx_param_3 == 0)) {
+  // The DIV instruction computes both the quotient and remainder at once
+  u16 ax_quot, dx_rem;
+  DIVMOD(ax_quot, dx_rem, dx_ax, bx_param_3);
+  // ... SNIP ....
+  goto ret;
+}
+</code></pre>
+<p>This is actually two cases:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Reason for using <code>DIV</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(CX:BX) == 0</code></td>
+<td>Intentionally trigger a divide-by-zero exception</td>
+</tr>
+<tr>
+<td><code>(DX:AX) and (CX:BX) both fit 16-bits</code></td>
+<td>Quotient and Remainder will both also be 16-bits</td>
+</tr>
+</tbody>
+</table>
+<h2>Modes</h2>
+<p>Finally we need to discuss the "modes"</p>
+<p>There is a prologue section:</p>
+<pre><code>// !(mode &amp; 0x1) =&gt; perform signed division
+if (!(di_mode &amp; 0x1)) {
+  // DX:AX (num) is negative?
+  if ((i32)dx_ax &lt; 0) {
+    // Negate it so we can treated it as unsigned
+    dx_ax = -dx_ax;
+    // Record in the mode so we can fix it up at the end
+    di_mode |= 0xc; // negate both a quot and rem result
+  }
+
+  // DX:AX (div) is negative?
+  if ((i32)cx_bx &lt; 0) {
+    // Negate it so we can treated it as unsigned
+    cx_bx = -cx_bx;
+    // Record in the mode so we can fix it up at the end
+    di_mode ^= 0x4; // negate a quot result only if both num &amp; div are not negative (xor cancels the negations)
+  }
+}
+</code></pre>
+<p>And there is an epilogue section:</p>
+<pre><code>// mode &amp; 0x2 =&gt; return the remainder
+if (bx_mode &amp; 0x2) {
+  dx_ax = di_si;
+  bx_mode &gt;&gt;= 1;
+}
+
+// mode &amp; 0x8 =&gt; negate remainder result
+// mode &amp; 0x4 =&gt; negate quotient result
+if (bx_mode &amp; 0x4) {
+  /* ORIGINAL: ... 32-bit negation impl ....
+     0000:0446: f7 da                   neg    dx
+     0000:0448: f7 d8                   neg    ax
+   0000:044a:   83 da 00                sbb    dx,0x0
+  */
+  dx_ax = -dx_ax;
+}
+</code></pre>
+<p>Here's the meaning of the Mode bits:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Bit Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>1 = 1&lt;&lt;0</code></td>
+<td>Perform Unsigned Division</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>2 = 1&lt;&lt;1</code></td>
+<td>Return Remainder instead of Quotient</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>4 = 1&lt;&lt;2</code></td>
+<td>Negate Quotient after computation</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>8 = 1&lt;&lt;3</code></td>
+<td>Negate Remainder after computation</td>
+</tr>
+</tbody>
+</table>
+<p>With this we can now also understand the entry stubs:</p>
+<table>
+<thead>
+<tr>
+<th>Mode (CX)</th>
+<th>Near Call</th>
+<th>Far Call</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>0000:03b2</code></td>
+<td><code>0000:03b5</code></td>
+<td>Compute Signed Division</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>0000:03b9</code></td>
+<td><code>0000:03bc</code></td>
+<td>Compute Signed Remainder</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>0000:03c1</code></td>
+<td><code>0000:03c4</code></td>
+<td>Compute Unsigned Division</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>0000:03c9</code></td>
+<td><code>0000:03cc</code></td>
+<td>Compute Unsigned Remainder</td>
+</tr>
+</tbody>
+</table>
+<p>Interestingly, there's no mode for <code>divmod</code>. And amusingly, scanning my binary, I found at least one function
+that called both "Compute Unsigned Division" and "Compute Unsigned Remainder" for the same values. I suppose
+the issue is that C doesn't have an operator for unified <code>divmod</code> and the compiler here didn't implement an optimization
+for it.</p>
+<h2>Conclusion</h2>
+<p>And with that, we have a full understanding of the function. Who guessed it was a division implementation
+from the assembly listing? <a href=mailto:xorvoid@gmail.com>Let me know!</a>.</p>
+<p>I had a lot of fun dissecting this function. I'm always a little impressed by the old tricks that are hanging out
+in these ancient binaries: long forgotten. It's fun to dredge them up and repopularize them!</p>
+<p>If you enjoyed this kind of thing, you can stay tuned to this blog via the rss feed (<a href="rss.xml">here</a>). You can also
+buy me a coffee (<a href="https://www.buymeacoffee.com/xorvoid">here</a>).</p>
+<p>Have a grand day, and try not to get lost in the Binary Mines!</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

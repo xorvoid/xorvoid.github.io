@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Algebra over Types</h1>
+<p>Like most Americans, while driving 7 hours through the uninspiring rural Illinois landscape to see a Total Solar Eclipse in Northern Arkansas, my mind will occasionally drift to Abstract Algebra and Types. Given that many Americans traveled recently to see this eclipse, I’m sure this article will be “old thoughts” to most. But here goes anyways.</p>
+<p>We’re gonna build an Abstract Algebra of Type Theory.</p>
+<p>Why? Umm.. don’t ask that question.</p>
+<p>Thanks 😁</p>
+<h2>Product Type Algebras</h2>
+<h4>Identity</h4>
+<p>We start with the humble struct:</p>
+<pre><code class="language-rust">struct {}
+</code></pre>
+<p>An empty struct makes for an acceptable “multiplicative identity”</p>
+<blockquote>
+[Oh, so you thought this was gonna be Haskell? Nope, lol! My brain works on C and saying C has a Type System might trigger a cognitive Segfault in type theorists. So this will be extra fun 🤩 Just kidding, we’ll be using something like Rust. But our friend, Cornelius C might chime in along the way]
+</blockquote>
+
+<h4>Operation</h4>
+<p>So, what's our “algebraic operation”? How about this:</p>
+<pre><code class="language-rust">   struct { a: Allen } * struct { b: Bob }
+ = struct { a: Allen, b: Bob }
+</code></pre>
+<p>Simple: we’re just appending struct members. And, we now have a <em>Unital Magma</em> (<a href="https://en.wikipedia.org/wiki/Magma_(algebra)#unital">reference</a>).</p>
+<h4>Associativity</h4>
+<p>What about associativity?</p>
+<p>Consider:</p>
+<pre><code class="language-rust">   (struct { a: Allen } * struct { b: Bob }) * struct { c: Charlie }
+ = struct { a: Allen, b: Bob } * struct { c: Charlie }
+ = struct { a: Allen, b: Bob, c: Charlie }
+</code></pre>
+<p>And:</p>
+<pre><code class="language-rust">   struct { a: Allen } * (struct { b: Bob } * struct { c: Charlie })
+ = struct { a: Allen } * struct { b: Bob, c: Charlie }
+ = struct { a: Allen, b: Bob, c: Charlie }
+</code></pre>
+<p>Great! So we have a <em>Monoid</em> (<a href="https://en.wikipedia.org/wiki/Monoid">reference</a>). </p>
+<h4>Commutativity</h4>
+<p>What about commutativity?</p>
+<p>Consider:</p>
+<pre><code class="language-rust">   struct { a: Allen } * struct { b: Bob }
+ = struct { a: Allen, b: Bob }
+</code></pre>
+<p>And:</p>
+<pre><code class="language-rust">   struct { b: Bob } * struct { a: Allen }
+ = struct { b: Bob, a: Allen }
+</code></pre>
+<p>Okay, cool. Our operation can be a simple unordered union of members!</p>
+<blockquote>
+[Cornelius C: But but but those are completely different memory layouts. You can't just ignore the member ordering!]
+</blockquote>
+
+<p>Shush! Don't rain on our parade with your pesky practicality!</p>
+<p>So we have an <em>Abelian Monoid</em> (<a href="https://en.wikipedia.org/wiki/Monoid#Commutative_monoid">reference</a>).</p>
+<h4>Inverses</h4>
+<p>What about inverses?</p>
+<p>Here's where the fun starts. We now open a portal to the underworld and pull out ... <em>Anti-Types</em>. Hey! If physicists can invent anti-matter to make their math work, so can we.</p>
+<p>An anti-type is just like an ordinary type except like "oposite":</p>
+<pre><code class="language-rust">struct { a: inv(Allen) }
+</code></pre>
+<p>Properties (by example):</p>
+<pre><code class="language-rust">inv(struct { a: Allen }) = struct { a: inv(Allen) }
+inv(struct { a: inv(Allen) }) = struct { a: Allen }
+struct { a: Allen } * struct { a: inv(Allen) } = struct {}
+</code></pre>
+<p>And we can do more fancy things like:</p>
+<pre><code class="language-rust">   inv(struct { a: Allen } * struct { b: inv(Bob) }) * struct { a: Allen }
+ = inv(struct { a: Allen, b: inv(Bob) }) * struct { a: Allen }
+ = struct { a: inv(Allen), b: Bob } * struct { a: Allen }
+ = struct { b: Bob }
+</code></pre>
+<blockquote>
+[Cornelius C: But but but how would you even represent an anti-type in memory?]
+</blockquote>
+
+<p>Oh you aborable old language! That's why we love you so much.</p>
+<p>Anyways, ignoring Cornelius's naive confusion, we now have an <em>Abelian Group</em>! ([reference])(https://en.wikipedia.org/wiki/Abelian_group) </p>
+<h2>Sum Type Algebras</h2>
+<p>Now it's time for the noble sum-type!</p>
+<blockquote>
+[Cornelius C: Sum what?]
+</blockquote>
+
+<p>For you, Cornelius, you'd know it as a <em>Tagged Union</em> (<a href="https://en.wikipedia.org/wiki/Tagged_union">reference</a>):</p>
+<pre><code class="language-c">struct {
+  int which; // when 0: use 'a', when 1: use 'b'
+  union {
+    struct Allen a;
+    struct Bob b;
+  };
+};
+</code></pre>
+<p>But we'll spell it like this:</p>
+<pre><code class="language-rust">enum {
+  a(Allen),
+  b(Bob),
+}
+</code></pre>
+<blockquote>
+[Cornelius C: Okay! I think I understand the binary representation again!]
+</blockquote>
+
+<p>Good, I guess. Enjoy this while it lasts...</p>
+<h4>Identity</h4>
+<p>Similar to before:</p>
+<pre><code class="language-rust">enum {}
+</code></pre>
+<h4>Operation</h4>
+<p>Also similar, yielding another <em>Unital Magma</em>:</p>
+<pre><code class="language-rust">   enum { a(Allen) } + enum { b(Bob) }
+ = enum { a(Allen), b(Bob) }
+</code></pre>
+<h4>Associativity</h4>
+<p>Also similar, yielding another <em>Monoid</em></p>
+<p>Consider:</p>
+<pre><code class="language-rust">   (enum { a(Allen) } + enum { b(Bob) }) + enum { c(Charlie) }
+ = enum { a(Allen), b(Bob) } + enum { c(Charlie) }
+ = enum { a(Allen), b(Bob), c(Charlie) }
+</code></pre>
+<p>And:</p>
+<pre><code class="language-rust">   enum { a(Allen) } + (enum { b(Bob) } + enum { c(Charlie) })
+ = enum { a(Allen) } + enum { b(Bob), c(Charlie) }
+ = enum { a(Allen), b(Bob), c(Charlie) }
+</code></pre>
+<h4>Commutativity</h4>
+<p>Also similar, yielding another <em>Abelian Monoid</em>:</p>
+<p>Consider:</p>
+<pre><code class="language-rust">   enum { a(Allen) } + enum { b(Bob) }
+ = enum { a(Allen), b(Bob }
+</code></pre>
+<p>And:</p>
+<pre><code class="language-rust">   enum { b(Bob) } + enum { a(Allen) }
+ = enum { b(Bob), a(Allen) }
+</code></pre>
+<p>That's fine because order is irrelavent for sum-types.</p>
+<blockquote>
+[Cornelius C: I guess.. the union is the same, but the tag-values depend on order. But, I can let this one fly.
+</blockquote>
+
+<p>Happy to have your approval!</p>
+<h3>Inverses</h3>
+<p>What about inverses?</p>
+<p>We need <em>Negated-Types</em> now. Note that these are not <em>Anti-Types</em> (which are <em>multiplicitive</em>):</p>
+<pre><code class="language-rust">enum { a(-Allen) }
+</code></pre>
+<p>Properties (by example):</p>
+<pre><code class="language-rust">-(enum { a(Allen) }) = enum { a(-Allen) }
+-(enum { a: -(Allen) }) = enum { a: Allen }
+enum { a: Allen } * enum { a: -(Allen) } = enum {}
+</code></pre>
+<blockquote>
+[Cornelius C: *SIGH*]
+</blockquote>
+
+<p>(TODO: Introducing Neg-Types)</p>
+<h2>A Field of Types</h2>
+<p>So we have an additive abelian group and a multiplicitive abelian group. Let's jam them together into a </p>
+<p><sum types as group>
+<product types as group></p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

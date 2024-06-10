@@ -140,7 +140,7 @@ This means that:</p>
 <pre><code class="language-text">($x M)
 </code></pre>
 <h3>Application</h3>
-<p>In Lambda Calculus, an abstraction is written as:</p>
+<p>In Lambda Calculus, an application is written as:</p>
 <pre><code class="language-text">MN
 </code></pre>
 <p>where <code>M</code> and <code>N</code> are two different terms and we're applying <code>M</code> to <code>N</code></p>
@@ -419,6 +419,8 @@ stack is a <em>very</em> natural computational structure. For example: a Turing 
 process moving values between them. Between the value stack and cons'ing lists, it often feels like exactly this.
 On the other side, it expresses lambda calculus quite comfortably, and the variable binding syntax is
 naturally similar to A-Normal Form.</p>
+<p>It's also curious that Forsp programs can be viewed as either as one big long list of instructions (much like a Turing Machine)
+or as a realization of Lambda Calculau.</p>
 <p>The addition of variables to a Forth style language is very helpful. Rather than dealing with a complicated stack
 dance, you can just do <code>($x do a bunch of things ^x USE)</code>. This pattern has occurred enough that I've started calling it
 <code>"value lifting"</code>.</p>

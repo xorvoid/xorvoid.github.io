@@ -26,104 +26,126 @@
     <hr>
   </div>
   <div id="main">
-<h1>FORSP: A Forth+Lisp Hybrid Lambda Calculus Language</h1>
-<p>Recently I've discovered a very interesting langauge / realization of the Lambda Calculus.
-I was unable to find any other language like it, which I find quite surprising as it seems quite
-obvious in hindsight. I say "discovered" in the same sense that Paul Graham says that McCarthy "discovered
-LISP" <a href="jmc.pdf">(link)</a>.</p>
-<p>This language has:</p>
+<h1>Forsp: A Forth+Lisp Hybrid Lambda Calculus Language</h1>
+<p>Recently I've discovered a very interesting language / realization of the Lambda Calculus.
+I was unable to find any other language like it, which I find quite surprising. In hindsight, the language
+seems obvious and natural. And the language keeps surprising me. I say "discovered" in the same sense that
+Paul Graham says that McCarthy "discovered Lisp" <a href="jmc.pdf">(link)</a>.</p>
+<p>It's a hybrid language combining Forth and Lisp, so naturally it's called Forsp (<a href="https://github.com/xorvoid/forsp/tree/main">code</a>)!</p>
+<p>Forsp has:</p>
 <ul>
-<li>An S-Expression syntax like LISP</li>
-<li>Function abstraction like LISP</li>
-<li>Function application like FORTH</li>
-<li>An environment structure like LISP</li>
-<li>Lexically-scoped closures like LISP (SCHEME)</li>
-<li>Cons-cells / lists / atoms like LISP</li>
-<li>A value/operand stack like FORTH</li>
-<li>An ability to express the lambda calculus</li>
+<li>An S-Expression syntax like Lisp</li>
+<li>Function abstraction like Lisp</li>
+<li>Function application like Forth</li>
+<li>An environment structure like Lisp</li>
+<li>Lexically-scoped closures like Lisp (Scheme)</li>
+<li>Cons-cells / lists / atoms like Lisp</li>
+<li>A value/operand stack like Forth</li>
+<li>An ability to express the Lambda Calculus</li>
 <li>A Call-By-Push-Value evaluation order</li>
-<li>Only 3 special forms and a few primitives</li>
+<li>Only 3 syntax special forms: ' ^ $</li>
+<li>Only 1 eval-time special form: quote</li>
+<li>Only 10 primitive functions need to self-implement</li>
+<li>Ability to self-implement in very little code</li>
 </ul>
-<p>Further, it's evaluator is even simpler than a McCarthy LISP <em>eval()</em> function.
-And interestingly, evaluation is now a three-way dance between <em>eval()</em>, <em>apply()</em>, and <em>compute()</em></p>
+<p>It's evaluator is very simple. I suspect simpler than a McCarthy Lisp <em>eval()</em> function, but I haven't
+defined a "simplicity function", so you can be the judge.</p>
+<p>In contrast to Lisp, <em>apply()</em> is trivial in Forsp, and instead we have a core function called <em>compute()</em></p>
 <h2>Computation</h2>
-<p>Computation processes a list of <em>instructions</em> that work like a FORTH.</p>
+<p>Computation processes a list of <em>instructions</em> that work like a Forth.</p>
 <h3>Application</h3>
 <p>An example:</p>
-<pre><code>  foo bar
+<pre><code class="language-text">  foo bar
 </code></pre>
 <p>Semantically, this means:</p>
 <ol>
-<li>call <code>foo()</code></li>
-<li>call <code>bar()</code></li>
+<li>call <code>foo</code></li>
+<li>call <code>bar</code></li>
 </ol>
-<p>Functions manipulate the operand/value stack implicitly like FORTH. Therefore, operationally they take no formal
+<p>Functions manipulate an operand/value stack implicitly like Forth. Therefore, operationally they take no formal
 arguments and return no values. However, semantically, they can be viewed as pure functions with <code>stack -&gt; stack</code>
 signatures: take the stack as an argument and return a new stack.</p>
 <h3>Special Forms</h3>
-<p>There are exactly 3 special forms:</p>
-<pre><code>' foo
-</code></pre>
-<p>This is the "quote" special form (just like LISP).</p>
-<p>In FORSP, the quoted literal is retained as-is and pushed to the stack.</p>
-<pre><code>^ foo
-</code></pre>
-<p>This is the "push" special form.</p>
-<p>In FORSP, "foo" will be resolved in current environment and pushed to the stack.</p>
-<pre><code>$ foo
-</code></pre>
-<p>This is the "pop and bind" special form.</p>
-<p>In FORSP, a value will be popped form the stack and bound to "foo" in the environment</p>
+<p>There are 3 syntactic special forms, but only 1 is special at evaluation-time.</p>
+<table>
+<thead>
+<tr>
+<th>Syntax</th>
+<th>Parsed as</th>
+<th>Semantics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'foo</code></td>
+<td><code>quote foo</code></td>
+<td>The quoted literal (foo) is retained as-is and pushed to the stack</td>
+</tr>
+<tr>
+<td><code>$foo</code></td>
+<td><code>quote foo pop</code></td>
+<td>A value will be popped from the stack and bound to "foo" in the environment</td>
+</tr>
+<tr>
+<td><code>^foo</code></td>
+<td><code>quote foo push</code></td>
+<td>The name "foo" will be resolved in current environment and pushed to the stack</td>
+</tr>
+</tbody>
+</table>
+<p>As you can see, <code>"quote"</code> is the only form that requires special handling by the evaluator. Both <code>"pop"</code> and <code>"push"</code>
+can be implemented as ordinary built-ins.</p>
+<p>The syntax forms are not strictly required, but they make coding much more manageable.</p>
 <h3>Thunking and Forcing</h3>
-<pre><code>()
+<pre><code class="language-text">()
 </code></pre>
-<p>In FORSP, parenthesis grouping is used as a thunking operator.</p>
+<p>In Forsp, parenthesis grouping is used as a thunking operator.</p>
 <p>As an example:</p>
-<pre><code>(foo bar)
+<pre><code class="language-text">(foo bar)
 </code></pre>
 <p>is the thunked-computation of:</p>
-<pre><code>foo bar
+<pre><code class="language-text">foo bar
 </code></pre>
-<p>A thunk is pushed to the stack like any other value.  Thunks can be forced by using the <code>force</code> term.
-The <code>force</code> term pops a value from the stack and forces the computation.</p>
-<p>This means that:</p>
-<pre><code>(foo bar) force
+<p>A thunk is pushed to the stack like any other value. Thunks can be forced by using the <code>force</code> term (see [1]).
+The <code>force</code> term pops a value from the stack and forces the computation.
+This means that:</p>
+<pre><code class="language-text">(foo bar) force
 </code></pre>
 <p>is the same computation as:</p>
-<pre><code>foo bar
+<pre><code class="language-text">foo bar
 </code></pre>
 <p>Similarly:</p>
-<pre><code class="language-text">^A force
+<pre><code class="language-text">^a force
 </code></pre>
 <p>is the same computation as just</p>
-<pre><code class="language-text">A
+<pre><code class="language-text">a
 </code></pre>
 <p>Furthermore, thunks are closures. They bind the current environment on creation.</p>
 <p>This means that in the following:</p>
 <pre><code class="language-text">(fn) 'a $fn force
 </code></pre>
 <p>We (1) thunk a computation involving <code>fn</code>, (2) rebind <code>fn</code> to <code>a</code>, (3) force the thunk.</p>
-<p>The compution will use the original <code>fn</code> rather than the re-bound <code>fn</code></p>
+<p>The computation will use the original <code>fn</code> rather than the re-bound <code>fn</code></p>
 <h3>What else?</h3>
 <p>That's all. Seems too simple?</p>
 <p>We'll it's shockingly expressive. Let's demonstrate!</p>
 <h2>Lambda Calculus</h2>
-<p>FORSP can express the lambda calculus via very simple re-write/re-ordering rules.</p>
+<p>Forsp can express the lambda calculus via very simple re-write/re-ordering rules.</p>
 <h3>Abstraction</h3>
 <p>In Lambda Calculus, an abstraction is written as:</p>
-<pre><code>λx.M
+<pre><code class="language-text">λx.M
 </code></pre>
 <p>where <code>x</code> is a variable bound on application and <code>M</code> is some body, possibly using <code>x</code></p>
-<p>In FORSP, we can express this as:</p>
-<pre><code>($x M)
+<p>In Forsp, we can express this as:</p>
+<pre><code class="language-text">($x M)
 </code></pre>
 <h3>Application</h3>
 <p>In Lambda Calculus, an abstraction is written as:</p>
-<pre><code>MN
+<pre><code class="language-text">MN
 </code></pre>
 <p>where <code>M</code> and <code>N</code> are two different terms and we're applying <code>M</code> to <code>N</code></p>
-<p>In FORSP, this is similar but transposed:</p>
-<pre><code>^N M
+<p>In Forsp, this is similar but transposed:</p>
+<pre><code class="language-text">^N M
 </code></pre>
 <p>Notice also that we use <code>^N</code> because we don't wish to apply <code>N</code> at this moment</p>
 <p>Let's translate some more complicated lambda terms:</p>
@@ -132,7 +154,7 @@ FALSE := λx.λy.y
 IF    := λp.λt.λf.(p t f)
 IF TRUE 1 2
 </code></pre>
-<p>In FORSP (direct translation):</p>
+<p>In Forsp (direct translation):</p>
 <pre><code class="language-text">(
   ($x $y ^x) $true
   ($x $y ^y) $false
@@ -145,20 +167,22 @@ IF TRUE 1 2
 <pre><code class="language-text">stack print
 </code></pre>
 <p>This is a very handy debugging code sequence.</p>
-<p>Notice here also the pattern:</p>
-<pre><code>(stuff here) $name
+<h3>Binding Names</h3>
+<p>Notice that the pattern:</p>
+<pre><code class="language-text">(stuff here) $name
+... SNIP ...
 </code></pre>
-<p>is used to bind names to closures/abstraction. The thunk is pushed after the
+<p>is used to bind names to function closures. The thunk is pushed after the
 closure is bound and then the <code>$name</code> operation pops it back off the stack and binds
 the name so we can use it.</p>
 <p>This name-bind sequence is equivalent to the following lambda-calculus form:</p>
-<pre><code>(λname.(
+<pre><code class="language-text">(λname.(
   ... SNIP ...
 ))
 λ.(stuff here)
 </code></pre>
-<p>which could be written more directly/verbosely in FORSP as:</p>
-<pre><code>(
+<p>which could be written more directly/verbosely in Forsp as:</p>
+<pre><code class="language-text">(
   (stuff here)
   ($name
     ... SNIP ...
@@ -166,17 +190,22 @@ the name so we can use it.</p>
 )
 </code></pre>
 <h2>Call-By-Push-Value (CBPV)</h2>
-<p>Most languages based on lambda-calcus have to contend with a choice between Normal Order Evaluation (Call-By-Value,CBV) or Applicative-Order (Call-By-Name). Eager languages (most of them) are CPV and Lazy langauges (i.e. Haskell) are CBN. But FORSP is neither, it is Call-By-Push-Value (CBPV).</p>
-<p>CBPV treats lambda variable binding as being "popped" and application argments as being "pushed". Further, there is
-a concept of "thunking" and "forcing". This should sound familar, FORSP is inspired by Levy's CBPV work.</p>
-<p>In fact, while reading about CBPV, I couldn't help but think "That's just FORTH", and thus FORSP was born.</p>
-<p>The very interesting upshot of this is that FORSP can have the determinism/eagerness nature of a CBV language when
-desired, but also the defered/lazy nature of a CBN language when useful.</p>
+<p>Most languages based on Lambda Calculus have to contend with a choice between Normal Order Evaluation (Call-By-Value,CBV) or Applicative-Order (Call-By-Name,CBN).
+Eager languages (most of them) are CPV and Lazy languages (notably Haskell) are CBN.
+But Forsp is neither, it is Call-By-Push-Value (CBPV).</p>
+<p>CBPV treats lambda variable binding as being "popped" and application arguments as being "pushed". Further, there is
+a concept of "thunking" and "forcing". This should sound familiar, Forsp is inspired by Paul Levy's <a href="https://www.cs.bham.ac.uk/~pbl/papers/thesisqmwphd.pdf">CBPV work</a>.</p>
+<p>In fact, while reading about CBPV, I couldn't help but think "That's Just Forth!", and thus Forsp was born.</p>
+<p>The very interesting upshot of this is that Forsp can have the determinism/eagerness nature of a CBV language when
+desired, but also the deferred/lazy nature of a CBN language when useful.</p>
 <p>Here's an example of this, defining a block-structured <code>if</code>:</p>
 <pre><code class="language-text">(
   ; NOTE: &quot;cswap&quot; is a &quot;conditional swap&quot; primitive.
   ;       It consumes a &quot;cond&quot; argument and if it's equal to the atom &quot;t&quot;, then it performs a swap
   ;       on the top two elements of the stack
+
+  ; Explanation:
+  ;   (1) conditionally swap the true and false blocks, (2) drop the unused one, (3) force the remaining one
 
   (cswap $_ force) $if
 
@@ -186,18 +215,18 @@ desired, but also the defered/lazy nature of a CBN language when useful.</p>
 )
 </code></pre>
 <p>This code only prints "true", which shows that the false case never executed.</p>
-<p>This is just a simple case, the power is much more.</p>
+<p>But, this is just a simple case, the full power is much more.</p>
 <h2>Recursion</h2>
-<p>In lambda calculus, acheiving recursive functions can be cumbersome since lambda-abstractions
-don't have a way to refer to themselves. In LISP, this leads to solutions like "LABEL". Usually, an
+<p>In lambda calculus, achieving recursive functions can be cumbersome since lambda-abstractions
+don't have a way to refer to themselves. In Lisp, this leads to solutions like "LABEL". Usually, an
 implementation includes some special-form to help with it.</p>
-<p>FORSP has no such special-form. It solves the issue the same way the Lambda Calculus does: a fixpoint combinator, the Y Combinator.</p>
+<p>Forsp has no such special-form. It solves the issue the same way the Lambda Calculus does: a fixpoint combinator, the Y Combinator.</p>
 <p>In Lambda Calculus:</p>
-<pre><code>Y := λf.(λx.f(x x))(λx.f(x x))
+<pre><code class="language-text">Y := λf.(λx.f(x x))(λx.f(x x))
 Yg = g(Yg) = g(g(Yg)) = g(g(g(Yg))) = ...
 </code></pre>
 <p>In CPV languages, the Y-Combinator leads to infinite recursion and cannot be used.</p>
-<p>But, FORSP is CBPV, so it actually can:</p>
+<p>But, Forsp is CBPV, so it actually can:</p>
 <pre><code class="language-text">;; Y-Combinator
 (
   ($f
@@ -220,13 +249,13 @@ Yg = g(Yg) = g(g(Yg)) = g(g(g(Yg))) = ...
   5 factorial print
 )
 </code></pre>
-<p>Which will print "120" as desired. Notice that we defined a little "rec" helper function. This makes
-the syntax pretty simple and very similar to the ML "let rec" syntax.</p>
+<p>Which will print <code>"120"</code> as desired. Notice that we defined a little <code>"rec"</code> helper function. This makes
+the syntax similar to the ML <code>"let rec"</code> syntax.</p>
 <h2>Stack Languages are Confusing</h2>
 <p>So you say "stack languages are confusing and backwards"? Well we can fix that too.
 Take our "if" construct.</p>
 <p>Currently we write:</p>
-<pre><code>(
+<pre><code class="language-text">(
   ^false_block
   ^true_block
   ^condition
@@ -234,8 +263,8 @@ Take our "if" construct.</p>
 )
 </code></pre>
 <p>Instead we'd prefer something like:</p>
-<pre><code>(
-  ^if [ condition computation ]
+<pre><code class="language-text">(
+  ^if (condition computation)
     ^true_block
     ^false_block
   endif
@@ -245,25 +274,21 @@ Take our "if" construct.</p>
 <pre><code class="language-text">(
   (force cswap $_ force)       $if
   ($f $t $c $fn ^f ^t ^c fn)   $endif
-  ()                           $[
-  ()                           $]
 
-  ^if [ 0 1 eq ]
+  ^if (0 1 eq)
     ('true print)
     ('false print)
   endif
 )
 </code></pre>
 <p>Much better.</p>
-<p>Note that "[" and "]" are semantically meaningless and are just the "()" no-op computation, but they
-much help with code readability in the same way that good comments help.</p>
 <p>With this, we can write a nicer "factorial":</p>
 <pre><code class="language-text">(
  ; ... SNIP ... Assuming previously defined functions
 
  ($self $n
-    ^if [ ^n 0 eq ] 1
-      ([ ^n 1 - ] self ^n *)
+    ^if (^n 0 eq) 1
+      (^n 1 - self ^n *)
     endif
  ) rec $factorial
 
@@ -271,98 +296,170 @@ much help with code readability in the same way that good comments help.</p>
 )
 </code></pre>
 <h2>Syntax Parsing</h2>
-<p>Syntax is S-Expressions, but like LISP there is a tiny modification for special-forms.
-In LISP, "'something" is converted to "(quote something)" by the parser. In FORSP, we
-similarly detect and convert special forms as follows:</p>
-<pre><code>'something =&gt; ' something
-^something =&gt; ^ something
-$something =&gt; $ something
+<p>Syntax is S-Expressions, but like Lisp there is a tiny modification for special-forms.
+In Lisp, "'something" is converted to "(quote something)" by the parser. In Forsp, we
+convert somewhat similarly:</p>
+<pre><code class="language-text">'something =&gt; quote something
+^something =&gt; quote something push
+$something =&gt; quote something pop
 </code></pre>
-<p>FORSP parser simply does space-injection to treat it as two-atoms. There's no semantic reason
-why you couldn't type the space manually, but we believe this feature is a big readability win.</p>
-<p>Similar to LISP, the FORSP parser also skips line-comments that start with ";"</p>
+<p>Similar to Lisp, the Forsp parser also skips line-comments that start with ";"</p>
 <h2>Implementation</h2>
-<p>The implementation is simple and ~500 lines of clean C code. It's effectively a LISP interpretor
-implementation with different semantics. That is to say, FORSP has atoms, interning, cons cells,
+<p>The implementation is simple and ~600 lines of clean C code. It's effectively a Lisp interpreter
+implementation with different semantics. That is to say, Forsp has atoms, interning, cons cells,
 environment, read, print, eval, etc.</p>
-<p>The code "eval/apply/compute" routines are given below to demonstrate their simplicity:</p>
-<pre><code>void eval(obj_t *expr, obj_t *env);
+<p>The core "eval/compute" routines are given below to demonstrate their stunning simplicity:</p>
+<pre><code class="language-c">void eval(obj_t *expr, obj_t **env);
 
 void compute(obj_t *comp, obj_t *env)
 {
-  if (!comp) return; // all-done
+  while (comp != state-&gt;nil) {
+    // unpack
+    obj_t *cmd  = car(comp);
+    comp = cdr(comp);
 
-  // unpack
-  obj_t *cmd  = car(comp);
-  obj_t *rest = cdr(comp);
+    if (cmd == state-&gt;atom_quote) {
+      if (comp == state-&gt;nil) FAIL(&quot;Expected data following a quote form&quot;);
+      push(car(comp));
+      comp = cdr(comp);
+      continue;
+    }
 
-  if (cmd == state-&gt;atom_quote) {
-    if (!rest) FAIL(&quot;Expected data followng a quote directive (')&quot;);
-    push(car(rest));
-    rest = cdr(rest);
-  } else if (cmd == state-&gt;atom_push) {
-    if (!rest || !IS_ATOM(car(rest))) FAIL(&quot;Expected an atom followng a push directive (^)&quot;);
-    push(env_find(env, car(rest)));
-    rest = cdr(rest);
-  } else if (cmd == state-&gt;atom_pop) {
-    if (!rest || !IS_ATOM(car(rest))) FAIL(&quot;Expected an atom followng a pop directive ($)&quot;);
-    env = env_define(env, car(rest), pop());
-    rest = cdr(rest);
-  } else {
     // atoms and (...) get ordinary eval
-    eval(cmd, env);
+    eval(cmd, &amp;env);
   }
-
-  compute(rest, env); // tail-call loop
 }
 
-void apply(obj_t *expr)
+void eval(obj_t *expr, obj_t **env)
 {
-  if (expr) {
-    if (IS_CLOS(expr)) { // closure
-      return compute(expr-&gt;clos.body, expr-&gt;clos.env);
-    } else if (IS_PRIM(expr)) { // primitive
-      return expr-&gt;prim.func();
+  if (IS_ATOM(expr)) {
+    obj_t *val = env_find(*env, expr);
+    if (IS_CLOS(val)) { // closure
+      return compute(val-&gt;clos.body, val-&gt;clos.env);
+    } else if (IS_PRIM(val)) { // primitive
+      return val-&gt;prim.func(env);
+    } else {
+      return push(val);
     }
-  }
-
-  // everything else applies and reproduces itself
-  push(expr);
-}
-
-void eval(obj_t *expr, obj_t *env)
-{
-  if (expr &amp;&amp; IS_ATOM(expr)) {
-    int64_t num;
-    if (parse_i64(expr-&gt;atom, &amp;num)) { // numbers
-      push(make_num(num));
-    } else { // normal names
-      apply(env_find(env, expr));
-    }
+  } else if (IS_NIL(expr) || IS_PAIR(expr)) {
+    return push(make_clos(expr, *env));
   } else {
-    push(make_clos(expr, env));
+    return push(expr);
   }
 }
 </code></pre>
-<p>And a handful of primitives:</p>
-<pre><code>void prim_force(void) { apply(pop()); }
-void prim_eq(void)    { push(obj_equal(pop(), pop()) ? state-&gt;atom_true : NULL); }
-void prim_cons(void)  { obj_t *a, *b; a = pop(); b = pop(); push(make_pair(a, b)); }
-void prim_car(void)   { push(car(pop())); }
-void prim_cdr(void)   { push(cdr(pop())); }
-void prim_cswap(void) { if (pop() == state-&gt;atom_true) { obj_t *a, *b; a = pop(); b = pop(); push(a); push(b); } }
-void prim_print(void) { print(pop()); }
-void prim_stack(void) { push(state-&gt;stack); }
-void prim_sub(void)   { obj_t *a, *b; b = pop(); a = pop(); push(make_num(obj_i64(a) - obj_i64(b))); }
-void prim_mul(void)   { obj_t *a, *b; b = pop(); a = pop(); push(make_num(obj_i64(a) * obj_i64(b))); }
+<p>There are 10 core primitives (needed to self-implement):</p>
+<pre><code class="language-c">/* Core primitives */
+void prim_push(obj_t **env) { push(env_find(*env, pop())); }
+void prim_pop(obj_t **env)  { obj_t *k, *v; k = pop(); v = pop(); *env = env_define(*env, k, v); }
+void prim_eq(obj_t **_)     { push(obj_equal(pop(), pop()) ? state-&gt;atom_true : state-&gt;nil); }
+void prim_cons(obj_t **_)   { obj_t *a, *b; a = pop(); b = pop(); push(make_pair(a, b)); }
+void prim_car(obj_t **_)    { push(car(pop())); }
+void prim_cdr(obj_t **_)    { push(cdr(pop())); }
+void prim_cswap(obj_t **_)  { if (pop() == state-&gt;atom_true) { obj_t *a, *b; a = pop(); b = pop(); push(a); push(b); } }
+void prim_tag(obj_t **_)    { push(make_num(pop()-&gt;tag)); }
+void prim_read(obj_t **_)   { push(read()); }
+void prim_print(obj_t **_)  { print(pop()); }
 </code></pre>
-<p>There's really not much else besides standard LISP implementation details.</p>
+<p>Some extra "non-essential" primitives are also included:</p>
+<pre><code class="language-c">void prim_stack(obj_t **_) { push(state-&gt;stack); }
+void prim_env(obj_t **env) { push(*env); }
+void prim_sub(obj_t **_)   { obj_t *a, *b; b = pop(); a = pop(); push(make_num(obj_i64(a) - obj_i64(b))); }
+void prim_mul(obj_t **_)   { obj_t *a, *b; b = pop(); a = pop(); push(make_num(obj_i64(a) * obj_i64(b))); }
+void prim_nand(obj_t **_)  { obj_t *a, *b; b = pop(); a = pop(); push(make_num(~(obj_i64(a) &amp; obj_i64(b)))); }
+void prim_lsh(obj_t **_)   { obj_t *a, *b; b = pop(); a = pop(); push(make_num(obj_i64(a) &lt;&lt; obj_i64(b))); }
+void prim_rsh(obj_t **_)   { obj_t *a, *b; b = pop(); a = pop(); push(make_num(obj_i64(a) &gt;&gt; obj_i64(b))); }
+</code></pre>
+<p>And, as any good Forth has low-level functions, so does Forsp (if desired):</p>
+<pre><code class="language-c">#if USE_LOWLEVEL
+/* Low-level primitives */
+void prim_ptr_state(obj_t **_)    { push(make_num((int64_t)state)); }
+void prim_ptr_read(obj_t **_)     { push(make_num(*(int64_t*)obj_i64(pop()))); }
+void prim_ptr_write(obj_t **_)    { obj_t *a, *b; b = pop(); a = pop(); *(int64_t*)obj_i64(a) = obj_i64(b); }
+void prim_ptr_to_obj(obj_t **_)   { push((obj_t*)obj_i64(pop())); }
+void prim_ptr_from_obj(obj_t **_) { push(make_num((int64_t)pop())); }
+#endif
+</code></pre>
+<p>There's really not much else besides standard Lisp implementation details.</p>
+<p>The full source is <a href="https://github.com/xorvoid/forsp/blob/0c2a5c3eb5029b262b2696f89cc5f5bd9a8910e3/forsp.c">here</a></p>
+<h2>Self-Evaluator</h2>
+<p>Naturally, A Lisp needs to be able to implement itself elegantly.</p>
+<p>Forsp succeeds here too. The core "eval/compute" routines are given below (in just 18 non-comment lines!):</p>
+<pre><code class="language-text">  ; compute [$comp $stack $env -&gt; $stack]
+  ($compute $eval
+    ^if (dup is-nil) (rot $_ $_) ( ; false case: return $stack
+      stack-pop
+      ^if (dup 'quote eq)
+        ($_ stack-pop rot swap stack-push swap ^eval compute)
+        (swap $comp eval ^comp ^eval compute) endif
+    ) endif
+  ) rec $compute
+
+  ; eval: [$expr $stack $env -&gt; $stack $env]
+  ($eval
+    ^if (dup is-atom) (
+      over2 swap env-find dup $callable
+      ^if (dup is-closure) (swap $stack cdr unpack-closure ^stack swap ^eval compute)
+      (^if (dup is-clos)   (force)
+                           (stack-push)  endif) endif)
+    (^if (dup is-list)
+      (over2 swap make-closure stack-push)
+      (stack-push) endif) endif
+  ) rec $eval
+</code></pre>
+<p>The full implementation with all utility functions, type-checking, recursion, environment, stack operations,
+closure operations, compute/eval, and primitives is under 80 lines of Forsp code!</p>
+<p>It can be found <a href="https://github.com/xorvoid/forsp/blob/0c2a5c3eb5029b262b2696f89cc5f5bd9a8910e3/examples/forsp.fp">here</a></p>
+<h2>Unexpected Discoveries</h2>
+<p>I stumbled across Forsp while thinking about CBPV and minimalist bootstrapping languages (unrelated project). It kind of
+just appeared and then has continued to surprise me. In many ways it feels more fundamental than Lisp or Forth. It
+appears to be both simpler than Lisp and more powerful than Forth.</p>
+<p>A fascinating thing about Forsp is that is seems to naturally express multiple computation fundamentals. For starters, a
+stack is a <em>very</em> natural computational structure. For example: a Turing Machine can be viewed as two-stacks and a
+process moving values between them. Between the value stack and cons'ing lists, it often feels like exactly this.
+On the other side, it expresses lambda calculus quite comfortably, and the variable binding syntax is
+naturally similar to A-Normal Form.</p>
+<p>The addition of variables to a Forth style language is very helpful. Rather than dealing with a complicated stack
+dance, you can just do <code>($x do a bunch of things ^x USE)</code>. This pattern has occurred enough that I've started calling it
+<code>"value lifting"</code>.</p>
+<p>Because of the stack+variable combination, Forsp code can express the same code in multiple ways:</p>
+<p>Variable-binding / sequenced / imperative:</p>
+<pre><code class="language-text">($a $b $c
+   ^c ^b * $result
+   ^a ^result + $result
+   ^result
+) $multiply_add
+</code></pre>
+<p>Functional / Point-free / Pipelined / Data-flow</p>
+<pre><code class="language-text">(* +) $multiply_add
+</code></pre>
+<p>Even though this example makes the later look more elegant, both forms are quite useful. Often the later
+form is hard to achieve so elegantly in practice.</p>
+<p>Other discoveries that surprised me:</p>
+<ul>
+<li>Being able to actually use the Y-combinator for recursion</li>
+<li>That "force" didn't have to be a primitive</li>
+<li>Core stack manipulation operations can be written in Forsp (not generally doable in Forth)</li>
+<li>Currying and partial evaluation work nicely</li>
+<li>Originally $ and ^ were also special eval forms, but they didn't need to be</li>
+<li>The stack is just an ordinary cons list (used implicitly just like the environment)</li>
+<li>CBPV is actually pretty useful</li>
+</ul>
+<p>I suspect there are more discoveries. Let me know if you find some.</p>
 <h2>Conclusion</h2>
-<p>FORSP: FORTH simplicity/malleability and LISP abstraction/homoiconicity.</p>
-<p>If you'd like to play around with FORSP, the implementation as discussed in this article it pinned ([here]).</p>
-<p>Reach out if you have any questions or if you discover anything else that's cool and surprising!</p>
-<p>I had a lot of fun discovering this much myself and hope others can learn even more. It feels like a
-language that could be of some theoretical interest.</p>
+<p>There's so much more I could say, but this seems like a good time to wrap up.</p>
+<p>If you're interested in learning more, the repository is <a href="https://github.com/xorvoid/forsp/tree/main">here</a>.</p>
+<p>There are many good examples to explore <a href="https://github.com/xorvoid/forsp/tree/main/examples">here</a>.</p>
+<p>And, if you enjoyed this, you can:</p>
+<ul>
+<li><a href="index.html">Read Other Articles</a></li>
+<li><a href="rss.xml">Follow My RSS Feed</a></li>
+<li><a href="https://www.buymeacoffee.com/xorvoid">Buy Me a Coffee</a></li>
+</ul>
+<h3>Footnotes</h3>
+<p>[1] <code>"force"</code> is not a primitive. But, it can be easily defined as:</p>
+<pre><code class="language-text">($x x) $force
+</code></pre>
   </div>
   <div id="footer">
     <hr>

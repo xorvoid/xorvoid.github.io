@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js" integrity="sha384-v6mkHYHfY/4BWq54f7lQAdtIsoZZIByznQ3ZqN38OL4KCsrxo31SLlPiak7cj/Mg" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h2>Breakdown</h2>
+<p>Overall I'm impressed with how much I've learned since September:</p>
+<h3>Functional Analysis:</h3>
+<p>Overall Functional Analysis seems to be of similar value as Real Analysis to me: not directly useful. But, it has shored up some significant gaps in my theoretical foundational understanding of Linear Algebra</p>
+<ul>
+<li>Abstractions of Banach Spaces and Hilbert Spaces: How far can you get with just a norm? Orthogonality is a mere consequence of a defined inner-product.</li>
+<li>Some utility in using the concept of linear operators to do code-motion (hoisting out of loop) optimizations in numerical machine code </li>
+<li>The Riesz Representation Theorem: inner-product of a vector and some unknown vector can represent all possible linear $f: R^n \to R$ such that $f(x) = a^Tx$ for some $a$ . And similar for matrices where $f(X) = \textbf{tr}(A^TX)$ for some $A$</li>
+<li>Lots of interesting things related to infinite dimensional spaces that are rather trivial (and don't need the theory) for most finite spaces one encounters with applications, e.g. Schauder Bases</li>
+<li>Adjoint Operators and relation to transposes, complex conjugates, etc</li>
+<li>Duality of functionals and vectors: helped clean up my confusions about matrices being sometimes used as data and sometimes as an operator</li>
+<li>Learned the bra-ket notation popular in quantum mechanics, and I think I prefer it. It's nice to have easy visual forms for outer and inner products (e.g. $ab^T$ and $a^Tb$ vs $\ket{a}\bra{b}$ and $\braket{a|b}$)</li>
+<li>Hahn-Banach Theorem feeling both obvious and mysterious simultaneously</li>
+<li>The dizzying collection of convergences and their regrettably inconsistent names: uniformly operator convergent, strongly operator convergent, weakly operator convergent, strong convergence of functionals, weak* convergence of functionals</li>
+<li>Spectrum generalizations of eigenvalues</li>
+</ul>
+<p>Dropped the book early to focus on other subjects so I didn't wade too far into spectrum yet. Might return to study it further in the future.</p>
+<h3>Scientific Computing:</h3>
+<p>Biggest practical return-on-investment. Content like this should be more common on two fronts:</p>
+<ol>
+<li>Too much mathematical education is focused on symbolic manipulation and closed-form analytical equations when in practice we often have systems that are intractable analytically. In practice, we solve everything (minus an epsilon) with iterative numerical methods</li>
+<li>The book is very well-written and focused on high-level concepts rather then the pedantic details of the modern advanced methods one is likely to end up using. And, there is a plethora of excellent computer problems at the end of each chapter to flex real practical skills (rather than just doing theory)</li>
+</ol>
+<p>Some takeaways (so far):</p>
+<ul>
+<li>Just use numerical methods: stop trying to solve everything analytically</li>
+<li>Linear algebra is very simple: you can write a basic linear algebra library in a few weekends. Making it fast is a different story. BLAS, LAPACK, etc are painful to use well but you need to.</li>
+<li>Numpy/scipy are incredible. They have basically everything to do most scientific computing. And LLMs really know numpy making it easy to get help.</li>
+<li>It seems like everything is based on Newton's Method</li>
+<li>.... MANY MANY MORE ...</li>
+<li>Numerical computing is 5x as much fun as closed-form math. It's easier (in some sense) and applicable to far more problems. Having a good numerical toolbox feels like some super power to tackle really hard problems without fear.</li>
+</ul>
+<h3>Linear Optimization (Bertsimas)</h3>
+<p>Overall, I really enjoyed learning linear optimization. I've bumped into the subject on many occasions and been confused by someone talking about "duals" on many occasions. No longer. Very useful theory.</p>
+<p>I didn't take the book to completion because I wanted to spend the time on comvex optimization instead as it is much more applicable at essentially the same computational cost.</p>
+<p>Some Takeaways:</p>
+<ul>
+<li>Simplex method is a pretty slick idea: just searching for a basis for some extreme point, traversing edges, decreasing the cost function at each step.</li>
+<li>Interior barrier methods: even cooler, just make it into Newton's method and optimize as if its unconstrained!</li>
+<li>Duality: very confusing at first. The connection to Lagrange multipliers seems mysterious, but gets better with exposure.</li>
+<li>Lots of neat geometric insights: vertices, extreme points, polyhedron representations, separating hyperplanes, ellipsoid representations, etc.</li>
+</ul>
+<h3>Convex Optimization</h3>
+<p>....</p>
+<h3>Statistical Decision Theory (Berger)</h3>
+<p>This has been my least favorite, and probably least useful. I picked it up because I had bumped into Decision Theory in machine learning books where it was used to justify methods on Bayesian grounds. I'd also wanted to spend time with Bayesian methods.</p>
+<p>Overall, my takeaway is that Decision Theory is basically just optimizing a loss-function expectation over a posterior distribution. I'm sure its more complicated than that, but most/all of the real heavy lifting is in the normal Bayesian methods used to obtain the posterior.</p>
+<p>The book spent some time on utility theory, which I personally have never been a big fan of due to its deep subjectivity. And then closing with the St Petersberg problem, which I deeply despise on many levels (discussion for another time...)</p>
+<p>The book also spends way too much time, in my humble opinion, on attacking frequentist analysis and "talking up" bayesian approaches instead. It's not that I disagree. In fact, I'm a Bayesian myself, both rather it gives the feeling "the lady doth protest too much". If Bayesian methods are so superior, stop arguing so much and just use them to get superior time-tested analysis! Fin.</p>
+<p>Another thing that bothers me is the tendency in Bayesian methods to resort to gross approximations and oversimplifications, such as assuming uni-modal distributions, using conjugate distributions, and/or the "original sin of statistics" assuming everything is Gaussian because the central-limit theorem is so cool.</p>
+<p>A lot of this comes down to limitations in computation that used to exist, but don't in 2024 anymore. Its fair that they were invented any used in a certain period of time, but its (IMHO) just a giant distraction these days when we have excellent numerical methods. This book was originally published in 1980, so maybe it gets a pass there (i.e. Gibbs Sampling wasn't published until 1984). Generally, I don't focus much on the publish date for math texts since its fairly timeless. However, most of the modern computational methods underpinning the practice of Bayesian analysis fairly are modern developments (e.g. Metropolis-Hastings: 1953/1970, Gibbs-Sampling: 1984, Hamiltonian Monte Carlo for Stats: 1996, No U-Turn Sampler (NUTS): 2014)</p>
+<p>At any rate, I dropped this text for another one more focused on Modern Bayesian Analysis</p>
+<h3>Statistical Rethinking</h3>
+<p>Not sure how I feel about this course but I'm glad I've explored it.</p>
+<p>I've always loved probability theory. But, the truth is, I've never liked classical statistics. It has always seemed to be an arbitrary and poorly motivated kludge of inconsistent and poorly-justified methods. A lot of the practice has always felt "encyclopedic" and "cargo culted" to me, e.g. "Use Method X in this case because our sample size is less than N" or "Its significant because p &lt; MAGIC_NUMBER" (who says that 0.05 is the magic significance level?).</p>
+<p>Anyways, all of this is probably just because I'm a Bayesian deep down...</p>
+<p>A lot of McElreath's book is about "rethinking" how we do inferential reasoning. He takes a Bayesian approach but also a Casual Inference approach. The approach is from doing science, which is a different angle for me.</p>
+<p>Causal Methods are completely new to me. The <code>do-calculus</code> is introduced which I had previously not heard about. </p>
+<p>Some Takeways (so far):</p>
+<ul>
+<li>... </li>
+</ul>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js" integrity="sha384-v6mkHYHfY/4BWq54f7lQAdtIsoZZIByznQ3ZqN38OL4KCsrxo31SLlPiak7cj/Mg" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Bonkoski University: Fall/Winter Semester 2024</h1>
+<p>I want to do a couple more retrospectives, in line with the theme of the <a href="on_writing.html">previous post</a>.</p>
+<p>Since September I've been focused on self-studying lots of (mostly) applied mathematics:</p>
+<ul>
+<li>Scientific Computing (Heath)</li>
+<li>Linear Optimization (Bertsimas)</li>
+<li>Convex Optimization (Boyd)</li>
+<li>Statistical Decision Theory (Berger)</li>
+<li>Statistical Rethinking (McElreath)</li>
+<li>Functional Analysis (Kreyszig) [Pure Math]</li>
+</ul>
+<h2>How it Started</h2>
+<p>I started self-studying mathematics in 2016-ish after feeling like I had significant gaps (compared to some colleagues). My technical background has generally been low-level computer engineering / compilers / operating-systems / machine-code / etc (e.g. <a href="sectorc.html">SectorC</a>, <a href="dis86.html">Dis86</a>, <a href="reversing_a_mystery_function.html">Reversing a Mystery Function</a>, etc)</p>
+<p>I've always had a rather "brutalist" approach to my own education. I want to learn the foundations and internal structure rather than the pretty finish / wallpaper. So, in 2016, I started with the material that is terrorizes/hazes many who elect to study undergraduate pure mathematics: Real Analysis.</p>
+<p>I went through Terrance Tao's excellent book <a href="http://www.hindbook.com/index.php/analysis-i-3-e">Analysis I</a>, which is really a Foundations course that starts from Peano Axioms and builds all the way to Real Analysis. Somewhere I had read that if you really want to learn math, you should essentially re-create the entire book: all proofs, all details, etc. That fit my brutalist approach, and so it began. I think I hand-wrote that entire book. And 3 months later I had developed chronic back pain from being hunched over in perpetual confusion by some $\epsilon-\delta $ proof.</p>
+<p>While I don't think I've ever directly used anything I learned from Real Analysis, I'm oddly found of those studies. Perhaps, its some Sisyphean or Stockholm Syndrome way of cherishing ones own memories of Type 2 or Type 3 fun? But, those struggles had made pure math an epsilon less intimidating which is probably worth its weight in gold.</p>
+<p>Over the years I've come to view mathematics as a language. In many respects its no different than any other human language: vocabulary, grammar, conventions, nuance, ambiguity, etc. The ambiguity point is one that is surprising to many new practitioners. After all, isn't the goal of mathematics to be precise and rigorous? We might think so, but every time we go to formalize mathematics, we seem to encounter big problems. This shouldn't be too surprising, mathematics is a language for communicating abstract logical ideas to other humans, not computers.</p>
+<p>Anyways, I think my main take-away from my studies of Tao's book was improving my Mathematics Fluency (as a language).</p>
+<p>That has been well worth the price of admission.</p>
+<h2>How its Going</h2>
+<p>But its now 2024 and I'm diving into it again.</p>
+<p>In some sense, this time is arguably both no different and more brutal:</p>
+<ul>
+<li>I'm still doing it all self-study: having pre-curated lectures and an engaged professor really is under-appreciated by most students</li>
+<li>I'm still basically writing all the books out (or at least the most technical parts) but now I do it directly in LaTex</li>
+<li>I'm studying four-ish texts simultaneously</li>
+</ul>
+<p>But in another sense, its more mature:</p>
+<ul>
+<li>I don't fret over every detail of every proof as long as I fully understand the big picture</li>
+<li>Its no longer important for me to do <strong>every exercise</strong></li>
+<li>I'm focused on subjects that have a strong overlap with computing and applications</li>
+<li>I lean on open course materials where possible (e.g. Boyd's Stanford Convex Optimization Lectures)</li>
+</ul>
+<p>I've learned over the years that writing is my key to learning. I can read the book five times and retain nothing. If I write out the arguments/proofs once, I just get it. I had a very similar experience with learning programming languages actually. Until 2022, I had read and followed the Rust project for a while but had written all of maybe 10 lines of code. It wasn't until I started using it to build a large project in 2022 that everything clicked.</p>
+<p>Conclusion: Writing is the key and synthesizes understanding for me. Reading is only a tool to assist the end-goal of writing. I'm curious in what other areas I can apply a "writing approach" profitably.</p>
+<h2>Learnings</h2>
+<p>I've learned so much in 3 months that its hard to even make a list. Overall, its all much more applicable than previous studies.
+I started writing up takeaways on each, but it just got too long and too triggering to my perfectionism 😬 I may do deeper dives in the future posts. TBD.</p>
+<p>Some short thoughts:</p>
+<ul>
+<li><strong>Scientific Computing:</strong> Wildly useful, should have studied this in depth long ago. Its all just Taylor Series. Its all just Newton's Method. Everything is sort of obvious but also impossibly subtle and error-prone. Kind of everything just works but also kind of nothing works. Its much better than analytical solutions, but decidedly worse. (This makes sense, trust me)</li>
+<li><strong>Linear Optimization:</strong> Beautiful geometric connections, duality is confusing but very useful. Deep respect for Dantzig after studying the Simplex Method: lots of connections.</li>
+<li><strong>Convex Optimization:</strong> This is the way (The Mandalorian). Seems deeply useful. Quite remarkable how many non-trivial problems turn out to be convex. Somewhat obvious extension from Linear Programming, given the Interior Point methods, but with very non-obvious conclusions. Boyd gives a better explanation/motivation of duality than Bertsimas.</li>
+<li><strong>Statistical Decision Theory:</strong> (1) Decision theory is just optimizing a loss-function over a posterior, all the hard work is in forming the posterior, (2) I don't like utility theory, (3) I don't like "Bayesian Apologetics"</li>
+<li><strong>Statistical Rethinking:</strong> An answer to why classical statistics always bothered me: I'm just a Bayesian. I like thinking in prior/posterior rather than applying dubious frequentist rules. Causal Inference is completely new to me: very curious. Also, just use MCMC rather than the dubious approximations to the posterior.</li>
+<li><strong>Functional Analysis:</strong> Less practical. But cleared up a lot of missing theoretical links for me: e.g. Riesz Representation: duality of operators and vectors</li>
+</ul>
+<p>I have many more thoughts, especially about Bayesian Decision Theory, Utility Theory, and a suppressed rant about the so-called "St. Petersburg Paradox". This probably is all because of an alarming conversation I had with some
+Effective Altruists shortly after FTX imploded (story for another time...)</p>
+<p>Maybe I'll write more. Or not.</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

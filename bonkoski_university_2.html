@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <!-- <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js" integrity="sha384-v6mkHYHfY/4BWq54f7lQAdtIsoZZIByznQ3ZqN38OL4KCsrxo31SLlPiak7cj/Mg" crossorigin="anonymous"></script> -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script> -->
+
+  
+    <!-- Load KaTeX main -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+
+    <!-- Load KaTeX auto-render extension -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Bonkoski University</h1>
+<p>I want to do a couple more retrospectives, in line with the theme of the previous post.</p>
+<p>Since September I've been focused on self-studying lots of (mostly) applied mathematics:</p>
+<ul>
+<li>Scientific Computing (Heath)</li>
+<li>Linear Optimization (Bertsimas)</li>
+<li>Convex Optimization (Boyd)</li>
+<li>Statistical Decision Theory (Berger)</li>
+<li>Statistical Rethinking (McElreath)</li>
+<li>Functional Analysis (Kreyszig) [Pure Math]</li>
+</ul>
+<h2>How it Started</h2>
+<p>I started self-studying math in 2016-ish after feeling like I had significant gaps (compared to some colleagues). My background had always been decidedly low-level computer engineering / compilers / operating-systems / machine-code / etc (e.g. see projects listed here...)</p>
+<p>I've always had a rather "brutalist" approach to my own education. I want to learn the foundations and internal structure rather than the pretty finish. So, naturally, I started with the material that is terrorizes/hazes many who elect to study undergraduate pure mathematics: Real Analysis.</p>
+<p>I went through Terrance Tao's excellent book, which is really a Foundations course that builds all the way to Real Analysis. Somewhere I had read that if you really want to learn math, you should essentially re-create the entire book: all proofs, all details. That fit my brutalist approach, so it begin. I think I hand-wrote that entire book. And 2 months later I had developed chronic back pain from being hunched over in perpetual confusion by some abstract and pedantic $\epsilon-\delta $ proof.</p>
+<p>While I don't think I've ever directly used anything I learned from Real Analysis, I'm oddly found of those moments. Perhaps, its in a sisyphisian or stockholm syndrome way of cherishing ones own memories of type 2 or type 3 fun? But, those struggles had made pure math an epsilon less intimidating which is probably worth its weight in gold. More on that later...</p>
+<h2>How its Going</h2>
+<p>In some sense, this time is arguably both no different and more brutal:</p>
+<ul>
+<li>I'm still doing it all self-study: having pre-curated lectures and an engaged professor really is under-appreciated by most students</li>
+<li>I'm still basically writing all the books out (or at least the most technical parts) but now I do it directly in LaTex</li>
+<li>I'm studying four-ish texts simultaneously</li>
+</ul>
+<p>But in another sense, its more mature:</p>
+<ul>
+<li>I don't fret over every detail of every proof as long as I fully understand the big picture</li>
+<li>Its no longer important for me to do <strong>every exercise</strong></li>
+<li>I'm focused on subjects that have a strong overlap with computing and applications</li>
+<li>I lean on open course materials where possible (e.g. Boyd's Stanford Convex Optimization Lectures)</li>
+</ul>
+<p>I've learned over the years that writing is my key to learning. I can read the book five times and retain nothing. If I write out the arguments/proofs once, I just get it. I had a very similar experience with learning programming languages actually. Until 2022, I had read and followed the Rust project for a while but had written all of maybe 10 lines of code. It wasn't until I started using it to build a large project in 2022 that everything clicked.</p>
+<p>Conclusion: Writing is the key and synthesizes understanding. Reading is only a tool to assist the end-goal of writing.</p>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

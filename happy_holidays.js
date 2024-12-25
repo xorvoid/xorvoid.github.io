@@ -27,7 +27,12 @@ function render_frame() {
     ctx.fillStyle = background_color;
     ctx.fillRect(0, 0, canvas_width, canvas_height);
     update();
-    draw_scene();
+
+    draw_context(() => {
+        // Wrote for 700x700 by 500x500 is better to support mobile, so rescale!
+        scale(5/7,5/7);
+        draw_scene();
+    });
 }
 
 class Snowflake {
@@ -186,7 +191,7 @@ function random_range(a, b) {
     return Math.random() * (b-a) + a;
 }
 
-function draw_scene() {
+function draw_scene() {    
     var loc_start = ctx.save();
     translate(canvas_width/2, canvas_height/2)
     scale(1, -1);

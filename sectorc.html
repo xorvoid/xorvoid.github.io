@@ -316,12 +316,12 @@ operations:
 <li>Function definitions and recursive function calls (using <code>func()</code> as a hash value into a symbol table at segment 0x3000)</li>
 <li>A special <code>asm</code> statement for inline machine-code</li>
 <li>Single-line <code>//</code> comments</li>
-<li>Multi-line <code>/*</code> comments</li>
+<li>Multi-line <code>/*</code> comments <code>*/</code></li>
 <li>A trick to do “space-injection” before semicolons to make code look more normal</li>
 </ul>
 <p>The biggest enabler here is the <code>binary_oper_tbl</code> which allows for a very cheap way to add lots of operations. Each operator is simply a <code>&lt;16-bit token-value&gt; &lt;16-bit-machine-code&gt;</code> pair, costing just 4 bytes.The above 14 operators cost just 56 bytes plus a little overhead to scan the table.</p>
 <h2>Grammar</h2>
-<p>Here's the full grammer specification:</p>
+<p>Here's the full grammar specification:</p>
 <pre><code>program     = (var_decl | func_decl)+
 var_decl    = &quot;int&quot; identifier &quot;;&quot;
 func_decl   = &quot;void&quot; func_name &quot;{&quot; statement* &quot;}&quot;
@@ -337,13 +337,13 @@ expr        = unary (op unary)?
 unary       = deref identifier
             | &quot;&amp;&quot; identifier
             | &quot;(&quot; expr &quot;)&quot;
-            | indentifier
+            | identifier
             | integer
 op          = &quot;+&quot; | &quot;-&quot; | &quot;&amp;&quot; | &quot;|&quot; | &quot;^&quot; | &quot;&lt;&lt;&quot; | &quot;&gt;&gt;&quot;
             | &quot;==&quot; | &quot;!=&quot; | &quot;&lt;&quot; | &quot;&gt;&quot; | &quot;&lt;=&quot; | &quot;&gt;=&quot;
 </code></pre>
 <p>In addition, both <code>// comment</code> and <code>/* multi-line comment */</code> styles are supported.</p>
-<p>(NOTE: This grammar is 704 bytes in ascii, 38% larger than it's implementation!)</p>
+<p>(NOTE: This grammar is 703 bytes in ascii, 38% larger than its implementation!)</p>
 <h2>Inline Machine-Code</h2>
 <p>A programming language without I/O is useless. And, as the C language is defined in an I/O agnostic way, we need some way out. Thus, an <code>asm</code> extension is supported. This allows programs to generate raw x86-16 machine code literals inline. Using <code>asm</code>, programs can access any low-level detail of the machine. This is used extensively in the example code.</p>
 <h2>Error-Handling</h2>

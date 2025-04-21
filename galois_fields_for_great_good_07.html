@@ -47,7 +47,7 @@
     <hr>
   </div>
   <div id="main">
-<h1>Learn you Galois Fields for Great Good (07) [PRE-RELEASE DRAFT]</h1>
+<h1>Learn you Galois Fields for Great Good (07)</h1>
 <p>Navigation |
 <a href="galois_fields_for_great_good_00.html">first</a> |
 <a href="galois_fields_for_great_good_06.html">previous</a> |
@@ -59,22 +59,20 @@ next (soon)</p>
 <p><b>Acknowledgements:</b> Thanks to <a href="https://dpzmick.com/">David Zmick</a> for his help in making this post happen!</p>
 <!-- We execute commands from this repo: ensure that it is built -->
 
-<h2>Implementing Binary Fields GF(2^k)</h2>
-<p>This is part 7 of a series on Abstract Algebra. In this part, we'll implement the Binary Fields GF(2^k).</p>
+<h2>Implementing Binary Fields <code>GF(2^k)</code></h2>
+<p>This is part 7 of a series on Abstract Algebra. In this part, we'll implement the Binary Fields <code>GF(2^k)</code>.</p>
 <h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/gf_2_k.rs"><code>src/gf_2_k.rs</code></a></h3>
 <h4>Implementing Binary Fields GF(2^k)</h4>
 <p>After implementing the general <code>GF(p^k)</code> Fields, why would we implement a special case?
-Can't we just use that implemention, configured for <code>p = 2</code>?</p>
-<p>Fair question. You could indeed use it. But, often it's a bit overkill and significantly
+Can't we just use that implementation, configured for <code>p = 2</code>?</p>
+<p>Fair question. You could indeed use it. But, often it's overkill and much
 better implementations exist for <code>GF(2^k)</code></p>
-<p>Let us explain.</p>
 <p>Recall that we used a vector representation for <code>GF(p^k)</code>. In computer memory, this was an
 array of bytes: one byte per coefficient. What happens when we use <code>p = 2</code>?  Well, it becomes
 a vector of bits (0 or 1). And, we have a very efficient way to store that vector in a computer:</p>
 <p><em>An Ordinary Binary Number</em></p>
-<p>Consider an 8-bit unsigned integer (<code>u8</code>), we can view this as a <em>vector of 8 bits</em>.
-Similarly, a 16-bit unsigned integer (<code>u16</code>) can be viewed as a <em>vector of 16 bits</em>. And so on!</p>
-<p>Let's also review the coefficent field <code>GF(2)</code>. Here are the addition and multiplication tables.
+<p>A <em>vector of 8 bits</em> is the same as an 8-bit unsigned integer (<code>u8</code>). And, a <em>vector of 16 bits</em> is the same as a 16-bit unsigned integer (<code>u16</code>)</p>
+<p>Let's also review the coefficient field <code>GF(2)</code>. Here are the addition and multiplication tables.
 You may wish to review <a href="galois_fields_for_great_good_02.html">section 2</a> and <a href="galois_fields_for_great_good_03.html">section 3</a>:</p>
 <p>Addition:</p>
 <table>
@@ -120,11 +118,11 @@ You may wish to review <a href="galois_fields_for_great_good_02.html">section 2<
 </tr>
 </tbody>
 </table>
-<p><i><u>Exercise:</u></i> These correspond to two very well-known common bitwise operations, which are they?</p>
+<p><i><u>Exercise:</u></i> These correspond to two very well-known bitwise operations, which are they?</p>
 <p>That's right! Addition is a bitwise XOR and Multiplication is a bitwise AND!</p>
 <p>Nifty, huh?</p>
 <p>All of these properties make <code>GF(2^k)</code> fields incredibly useful for computer science applications as
-they map very well onto ordinary binary-state transistor computers.</p>
+they map very well onto ordinary binary-based computers.</p>
 <h4>Enough chatter, let's go code!</h4>
 <p>As before, we will implement addition, subtraction, multiplication, and division using
 operator-overloading so we can use the normal operators: +, -, *, /</p>
@@ -140,26 +138,25 @@ here instead of using advanced Rust features.</p>
 <p>We use some defaults below for a <code>GF(2^3)</code> Field.</p>
 <p>Feel free change the parameters to get a different field. But, please do be careful to configure
 correctly. Most notably: <code>Q</code> must be irreducible.</p>
-<pre><code class="language-rust">pub const K: usize = 3; // Must be less-or-equal 64, as we are using u64 for the bitvector
+<pre><code class="language-rust">pub const K: usize = 3; // Must be less-or-equal 64, as we are using u64 for the bit-vector
 pub const Q: u64 = 11; // Default: x^3 + x + 1
 </code></pre>
-<p>We will store polynomials as a single u64 because all of our polynomial coefficients
-are in {0,1}</p>
-<p>For example <code>x^3 + x^2 (+ 0x) + 1</code> can be represented as <code>0b1101</code> or as <code>13</code> in decimal</p>
-<p>This is slightly different than the previous integer representation
-conversion scheme we used for <code>GF(p^k)</code>.</p>
-<p><i><u>Exercise:</u></i> Convert 32 to a polynomial in <code>GF(2)[x]</code>, then convert to binary</p>
-<p><i><u>Exercise:</u></i> Convert 31 to a polynomial in <code>GF(2)[x]</code>, then convert to binary</p>
-<p><i><u>Exercise:</u></i> Convert the polynomial x^4 + x in <code>GF(2)[x]</code> to binary, then convert to decimal</p>
+<p>We will store polynomials as a single <code>u64</code> because each of our polynomial coefficients
+can be represented by a single bit.</p>
+<p>For example <code>x^3 + x^2 (+ 0x) + 1</code> can be represented as <code>0b1101</code> (4 bits) or as <code>13</code> in decimal</p>
+<p><i><u>Exercise:</u></i> Convert 32 to a polynomial in <code>GF(2)[x]</code>, then convert to binary. How many bits are required?</p>
+<p><i><u>Exercise:</u></i> Convert 31 to a polynomial in <code>GF(2)[x]</code>, then convert to binary. How many bits are required?</p>
+<p><i><u>Exercise:</u></i> Convert the polynomial x^4 + x in <code>GF(2)[x]</code> to binary, then convert to decimal. How many bits are required?</p>
+<p>Let's now define our number type using a <code>u64</code> to store our bit-vector:</p>
 <pre><code class="language-rust">#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GF(u64);
 </code></pre>
-<p>The basic utility functions are very straightforward now:</p>
+<p>The basic utility functions are very straightforward.</p>
 <pre><code class="language-rust">impl GF {
   pub fn new(val: u64) -&gt; GF {
-    // Sanity check!
-    assert!((val as usize) &lt; GF::number_of_elements());
-    GF(val)
+      // Sanity check!
+      assert!((val as usize) &lt; GF::number_of_elements());
+      GF(val)
   }
 
   pub fn number_of_elements() -&gt; usize {
@@ -174,11 +171,11 @@ pub struct GF(u64);
 }
 </code></pre>
 <h4>Addition in <code>GF(2^k)</code></h4>
-<p>Recall that polynomial addition is pointwise addition of coefficents. Since addition in <code>GF(2)</code> is an XOR, it is also in <code>GF(2^k)</code>:</p>
-<pre><code class="language-text">         1x^2 + 1x + 1   =&gt;    0b0111
-+ 1x^3 + 0x^2 + 1x + 1   =&gt; ^  0b1011
+<p>Recall that polynomial addition is point-wise addition of coefficients. Since addition in <code>GF(2)</code> is an XOR, it is also in <code>GF(2^k)</code>:</p>
+<pre><code class="language-text">         1x^2 + 1x + 1   =&gt;    0111
++ 1x^3 + 0x^2 + 1x + 1   =&gt; ^  1011
 ----------------------      ---------
-  1x^3 + 1x^2 + 0x + 0  =&gt;     0b1100
+  1x^3 + 1x^2 + 0x + 0  =&gt;     1100
 </code></pre>
 <p>In code, this is simply:</p>
 <pre><code class="language-rust">impl Add&lt;GF&gt; for GF {
@@ -189,22 +186,23 @@ pub struct GF(u64);
 }
 </code></pre>
 <h4>Negation and Subtraction in <code>GF(2^k)</code></h4>
-<p>To negate, we want the value b, such that a+b=0</p>
-<p><i><u>Exercise:</u></i> Look at the addition table for <code>GF(2)</code>. For each number, what is it's negation?</p>
+<p>To negate, we want the value b, such that <code>a+b=0</code></p>
+<p><i><u>Exercise:</u></i> Look at the addition table for <code>GF(2)</code>. For each number, what is its negation? Is there a simple rule for negation?</p>
 <p>That's right, the negation of a number in <code>GF(2)</code> is itself. Negation is an identity operation! And, in <code>GF(2^k)</code> it is the same also.</p>
-<p>So, we have the simple implementation for negation:</p>
+<p>So, we have a trivial implementation for negation:</p>
 <pre><code class="language-rust">impl GF {
   pub fn negate(self) -&gt; GF {
     self
   }
 }
 </code></pre>
-<p>A fascinating consequence of this is that subtraction and addition are the same operation. Just an XOR!</p>
-<p>Here, we'll write the subtraction implementation as we have for other fields. But, in many optimized implementations, the same routine as addition is used!</p>
+<p>A fascinating consequence is that subtraction and addition are the exact same operation. Just an XOR!</p>
+<p><i><u>Exercise:</u></i> Convince yourself of this fact using the identity <code>a - b = a + (-b)</code></p>
+<p>Let's implement it the same way we implemented addition:</p>
 <pre><code class="language-rust">impl Sub&lt;GF&gt; for GF {
     type Output = GF;
     fn sub(self, rhs: GF) -&gt; GF {
-        self + rhs.negate() // or `self + rhs` or `self.0 ^ rhs.0`
+        GF::new(self.0 ^ rhs.0)
     }
 }
 </code></pre>
@@ -212,67 +210,68 @@ pub struct GF(u64);
 <p>Now we come to multiplication, the tricky operation in polynomial fields.</p>
 <p>For <code>GF(p^k)</code> we implemented multiplication as two-steps:</p>
 <ol>
-<li>Convolution of coefficents yielding <code>2k</code> new coefficents</li>
-<li>Polynomial modulus reduction to <code>k</code> coefficents</li>
+<li>Convolution of coefficients yielding <code>2k</code> new coefficients</li>
+<li>Polynomial modulus reduction to <code>k</code> coefficients</li>
 </ol>
-<p>For <code>GF(2^k)</code> we could do exactly the same thing but we can simplify by better utilizing bitwise operations.</p>
+<p>For <code>GF(2^k)</code> we could do exactly the same thing, but we can simplify by better utilizing bitwise operations.</p>
 <p>First let's recall the two operations we used in reduction for <code>GF(p^k)</code>:</p>
 <ul>
 <li><code>shift</code>: Multiplying by a monomial in <code>(1, x, x^2, x^3, ...etc...)</code> is a simple shift of the coefficient array</li>
-<li><code>scale</code>: Multiplying by any scalar is a simple pointwise-coefficient multiply.</li>
+<li><code>scale</code>: Multiplying by any scalar is a simple point-wise coefficient multiply.</li>
 </ul>
 <p>For <code>GF(2^k)</code> these operations simplify:</p>
 <ul>
-<li><code>shift</code>: Shifting the coefficent array is just performing a "bit-shift" (i.e. <code>&lt;&lt;</code> or <code>&gt;&gt;</code>)</li>
+<li><code>shift</code>: Shifting the coefficient array is just performing a "bit-shift" (i.e. <code>&lt;&lt;</code>)</li>
 <li><code>scale</code>: Scaling means multiplying by 0 or 1, this is a "selection operation" (i.e. <code>if (not_zero) use_it()</code>)</li>
 </ul>
 <p><i><u>Exercise:</u></i> Convince yourself that these are equivalent operations for <code>GF(2^k)</code>?</p>
 <h4>Multiplication by shift and select</h4>
 <p>Another way to perform polynomial multiplication is to decompose it into a several simpler products using the distribution law.</p>
-<p>Consider polynomials <code>a</code> and <code>b</code> and we wish to obtain <code>a*b</code>. If we expand polynomial <code>b</code>, we have:</p>
+<p>Consider polynomials <code>a</code> and <code>b</code> and we wish to obtain <code>a*b</code>. If we expand polynomial <code>b</code> and distribute, we have:</p>
 <pre><code class="language-text">a * b = a * (b_n x^n + ... + b_1 x + b_0)
       = b_n * a * x^n + ... + b_1 * a * x + b_0 * a
 </code></pre>
-<p>As discussed in the previous section, multiplying by a monomial (e.g. <code>x^k</code>) is a simple coefficent shift operation.</p>
+<p>As discussed in the previous section, multiplying by a monomial (e.g. <code>x^k</code>) is a simple coefficient shift operation.</p>
 <p>Thus, we'll use the notation:</p>
 <pre><code class="language-text">a * x^k = a &lt;&lt; k
 </code></pre>
 <p>This gives us:</p>
 <pre><code class="language-text">a * b = b_n * (a &lt;&lt; n) + ... + b_1 * (a &lt;&lt; 1) + b_0 * (a &lt;&lt; 0)
 </code></pre>
-<p>Now observe that for coefficents in <code>GF(2)</code>, <code>b_i</code> is in the set <code>{0, 1}</code>. This means that in the above decomposition, there is no coefficent multiplication. Instead, we either add the term to the result or we skip it (selection).</p>
+<p>Now observe that for coefficients in <code>GF(2)</code>, <code>b_i</code> is in the set <code>{0, 1}</code>. This means that in the above decomposition, there is no coefficient multiplication. Instead, we either add the term to the result or we skip it (selection).</p>
 <p>As an example, consider:</p>
-<pre><code class="language-text">b = x^5 + x^3 + 1  (or 0b101001)
+<pre><code class="language-text">b = x^5 + x^3 + 1  (or 101001)
 </code></pre>
 <p>Then, our decomposition is:</p>
 <pre><code class="language-text">a * b = (a &lt;&lt; 5) + (a &lt;&lt; 3) + (a &lt;&lt; 0)
 </code></pre>
-<p>In other words, we simply sum all shifts, but skip anywhere the coefficent is 0.</p>
+<p>In other words, we simply sum all shifts, but skip anywhere the coefficient is 0.</p>
 <p>In pseudocode, we have:</p>
 <pre><code class="language-text">c = 0
 for i in 0..k:
   if extract_bit(b, i) == 1:
-    c = poly_add(c, a)   ## c ^= a
+    c = poly_add(c, a)
   a = a &lt;&lt; 1
 return c
 </code></pre>
 <p>Here, we iterate through each possible term (<code>a &lt;&lt; i</code>) one at a time. Then, we select the terms that we need and add them.</p>
-<p><i><u>Exercise:</u></i> Think about this algorithm a bit. Convince yourself it is correct. Why is this a</p>
+<p><i><u>Exercise:</u></i> Think about this algorithm a bit. Convince yourself it is correct. Why is this equivalent to a convolution? Why can't general <code>GF(p^k)</code> fields use this algorithm?</p>
 <p><i><u>Exercise:</u></i> This algorithm appears to only consider <code>n</code> terms, but a convolution involves <code>O(n^2)</code> terms. What's going on here?</p>
 <p><i><u>Exercise:</u></i> How would this scale to very large <code>k</code>? (e.g. consider k = 1,000,000,000)</p>
 <h4>Applying the polynomial reduction</h4>
-<p>To complete the multiplication, we need to apply the polynomial reduction. We could do this in the same way as our <code>GF(p^k)</code> implementation, but
+<p>To complete the multiplication, we need to apply the polynomial reduction by <code>Q</code>. We could do this in the same way as our <code>GF(p^k)</code> implementation, but
 there's a better approach that allows us to integrate this operation into the above algorithm.</p>
 <p>The first observation is that we never need to apply a reduction after an addition in <code>GF(2^k)</code>. This means that in the above algorithm, we only have to
 worry about the <code>a &lt;&lt; 1</code> monomial shifting (<code>a * x</code>). Instead of applying the reduction at the end, we can instead apply this after every <code>a &lt;&lt; 1</code> computation.</p>
 <p>At first glance, this doesn't seem like an improvement. Now we're doing <code>k</code> reductions instead of a single one (at the end)! But, it turns out each of
 these <code>k</code> reductions is a much simper and faster operation.</p>
 <p>If <code>a</code> is in <code>GF(2^k)</code>, then it can be represented by at most <code>k</code> bits. Thus, <code>a &lt;&lt; 1</code> can be represented in
-at most <code>k + 1</code> bits. This means that we only have to consider the most-significant-bit. If it is set, we simply need to subtract off <code>Q</code> (the irreducible polynomial) to obtain just <code>k</code> bits.</p>
+at most <code>k + 1</code> bits. This means that we only have to consider the most-significant-bit (MSB) to reduce from <code>k+1</code> bits to <code>k</code> bits.
+If the MSB is set, we simply need to subtract off <code>Q</code> (the irreducible polynomial).</p>
 <p>Let's do an example using:</p>
 <pre><code class="language-text">K = 3
-Q = x^3 + x + 1  (0b1011)
-A = x^2 + x      (0b0110)
+Q = x^3 + x + 1  (1011)
+A = x^2 + x      (0110)
 </code></pre>
 <p>Step by step:</p>
 <table>
@@ -287,63 +286,63 @@ A = x^2 + x      (0b0110)
 <tbody>
 <tr>
 <td><code>1</code></td>
-<td><code>0b0110</code></td>
-<td><code>0b1100</code></td>
-<td><code>0b0111</code></td>
+<td><code>0110</code></td>
+<td><code>1100</code></td>
+<td><code>0111</code></td>
 </tr>
 <tr>
 <td><code>2</code></td>
-<td><code>0b0111</code></td>
-<td><code>0b1110</code></td>
-<td><code>0b0101</code></td>
+<td><code>0111</code></td>
+<td><code>1110</code></td>
+<td><code>0101</code></td>
 </tr>
 <tr>
 <td><code>3</code></td>
-<td><code>0b0101</code></td>
-<td><code>0b1010</code></td>
-<td><code>0b0001</code></td>
+<td><code>0101</code></td>
+<td><code>1010</code></td>
+<td><code>0001</code></td>
 </tr>
 <tr>
 <td><code>4</code></td>
-<td><code>0b0001</code></td>
-<td><code>0b0010</code></td>
-<td><code>0b0010</code></td>
+<td><code>0001</code></td>
+<td><code>0010</code></td>
+<td><code>0010</code></td>
 </tr>
 <tr>
 <td><code>5</code></td>
-<td><code>0b0010</code></td>
-<td><code>0b0100</code></td>
-<td><code>0b0100</code></td>
+<td><code>0010</code></td>
+<td><code>0100</code></td>
+<td><code>0100</code></td>
 </tr>
 <tr>
 <td><code>6</code></td>
-<td><code>0b0100</code></td>
-<td><code>0b1000</code></td>
-<td><code>0b0011</code></td>
+<td><code>0100</code></td>
+<td><code>1000</code></td>
+<td><code>0011</code></td>
 </tr>
 <tr>
 <td><code>7</code></td>
-<td><code>0b0011</code></td>
-<td><code>0b0110</code></td>
-<td><code>0b0110</code></td>
+<td><code>0011</code></td>
+<td><code>0110</code></td>
+<td><code>0110</code></td>
 </tr>
 </tbody>
 </table>
 <p>As you can see, when the most-significant-bit is set (iters 1,2,3,6), we subtract off <code>Q</code> (XOR).
 And, when the most-significant-bit is clear (iters 4,5,7), we do nothing.</p>
-<p><i><u>Exercise:</u></i> Work through an iteration table using A = x^2 + 1 (0b1001) instead.</p>
-<p>Let's add this reduction step to out multiplication algorithm:</p>
+<p><i><u>Exercise:</u></i> Work through an iteration table using <code>A = x^2 + 1 (1001)</code> instead.</p>
+<p>Let's add this reduction step to our multiplication algorithm:</p>
 <pre><code class="language-text">c = 0
 for i in 0..k:
   if extract_bit(b, i) == 1:
-    c = poly_add(c, a)   ## c ^= a
+    c = poly_add(c, a)
   a = a &lt;&lt; 1
   if extract_bit(a, k) == 1:
     a = poly_sub(a, q)
 return c
 </code></pre>
 <p><i><u>Exercise:</u></i> Make sure you fully understand the algorithm before proceeding.</p>
-<p>Okay, lets get back to coding!</p>
+<p>Okay, let's get back to coding!</p>
 <pre><code class="language-rust">fn extract_bit(n: u64, i: usize) -&gt; u64 {
     (n &gt;&gt; i) &amp; 1
 }
@@ -352,7 +351,7 @@ impl Mul&lt;GF&gt; for GF {
     type Output = GF;
     fn mul(self, rhs: GF) -&gt; GF {
         // First we unpack to get the raw u64 and we implement the algorithm
-        // directly over the bits, rather than using the field add / sub operators.
+        // directly over the bits, rather than using the field's add/sub operators.
         let mut a: u64 = self.0;
         let b: u64 = rhs.0;
         let mut c: u64 = 0;
@@ -371,26 +370,58 @@ impl Mul&lt;GF&gt; for GF {
     }
 }
 </code></pre>
-<p>Just like before, we will just use brute force to find inverses.</p>
-<p>There are much better approaches, but we'll need a dedicated article to focus on those.</p>
-<pre><code class="language-rust">impl GF {
-  pub fn invert(self) -&gt; Result&lt;GF, String&gt; {
-    // Important: Zero has no inverse, it's invalid
-    if self == GF::new(0) {
-      return Err(&quot;Zero has no inverse&quot;.to_string());
+<h4>Multiplicative Inverses using a Lookup Table</h4>
+<p>We now turn to multiplicative inverses. In previous implementations, we simply used brute force search whenever an inverse was needed.
+There are better approaches to finding inverses, but we'll need a dedicated article to adequately cover them.</p>
+<p>For now, we'll introduce a new, highly practical, technique used instead of fancy algorithms: Lookup Tables.</p>
+<p>Essentially, we precompute the answers to all possible inverses and store them in a table. When an inverse is needed, we simply look the answer up in memory.
+This technique still requires having some method to compute the right answer, but if that method is slow and inefficient we can run it "offline". Then, when doing
+computations, performance is instead determined by the computer's memory subsystem.</p>
+<p>In this implementation, we'll build the lookup table at the beginning of runtime. It's more common to pre-compute them at compile-time or to generate the tables with
+an auxiliary program and copy them into source code. But, for simplicity we'll avoid doing that here.</p>
+<p>Feel free to improve this for your own needs!</p>
+<pre><code class="language-rust">static INVERSE_LUT: std::sync::OnceLock&lt;Vec&lt;GF&gt;&gt; = std::sync::OnceLock::new();
+
+impl GF {
+    fn get_inverse_lut() -&gt; &amp;'static [GF] {
+        INVERSE_LUT.get_or_init(|| {
+            // Build up the inverse table using brute force
+            let mut lut = vec![];
+            lut.resize(GF::number_of_elements(), GF::new(0));
+
+            // Find the inverse for each of the numbers {1, 2, ..., N-1}
+            for x in 1..GF::number_of_elements() {
+                // Scan the numbers {1, 2, ..., N-1} until we find the inverse
+                let x = GF::new(x as u64);
+                let mut found = false;
+                for y in 1..GF::number_of_elements() {
+                    let y = GF::new(y as u64);
+                    if x * y == GF::new(1) {
+                        lut[x.0 as usize] = y;
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    unreachable!(&quot;Every non-zero number has an inverse&quot;);
+                }
+            }
+
+            lut
+        })
     }
-    // Scan the numbers {1, 2, ..., P-1} until we find the inverse
-    for x in 1..GF::number_of_elements() {
-      let candidate = GF::new(x as u64);
-      if self * candidate == GF::new(1) {
-        return Ok(candidate); // Found!
-      }
+
+    pub fn invert(self) -&gt; Result&lt;GF, String&gt; {
+        // Important: Zero has no inverse, it's invalid
+        if self == GF::new(0) {
+            return Err(&quot;Zero has no inverse&quot;.to_string());
+        }
+        // Perform a lookup in the pre-computed table
+        Ok(GF::get_inverse_lut()[self.0 as usize])
     }
-    unreachable!(&quot;Every non-zero number has an inverse&quot;);
-  }
 }
 </code></pre>
-<p>And division can be exactly the same also.</p>
+<p>Division is the same as in previous fields: invert and multiply</p>
 <pre><code class="language-rust">impl Div&lt;GF&gt; for GF {
   type Output = Result&lt;GF, String&gt;;
   fn div(self, rhs: Self) -&gt; Result&lt;GF, String&gt; {
@@ -434,6 +465,15 @@ These are all quite similar to <code>GF(p^k)</code> if you'd rather skim them.</
   fn number_of_elements() -&gt; usize {
     GF::number_of_elements()
   }
+}
+</code></pre>
+<p>Finally, we add a helper method for pre-computing any lookup-tables before beginning field calculations.
+Calling this is optional as the library will generate tables on first use. But this can be useful for
+making calculations more deterministic.</p>
+<pre><code class="language-rust">impl GF {
+    pub fn initialize_all_lookup_tables() {
+        GF::get_inverse_lut();
+    }
 }
 </code></pre>
 <h4>Testing Time</h4>
@@ -583,26 +623,107 @@ mod tests {
   }
 }
 </code></pre>
+<h3>Building and Testing</h3>
+<p>The above code can be built and tested the normal rust ways:</p>
+<pre><code>cargo test
+cargo build
+</code></pre>
+<h3>A <code>GF(2^k)</code> Calculator</h3>
+<p>Our calculator from the previous implementations will work for this new field also:</p>
+<pre><code class="language-shell">$ ./target/debug/gf_2_k_calc
+================================================================================
+A Calculator for GF(2^3)
+================================================================================
+
+Addition Table:
+
+   +  |   0    1    2    3    4    5    6    7  
+-----------------------------------------------
+   0  |   0    1    2    3    4    5    6    7  
+   1  |   1    0    3    2    5    4    7    6  
+   2  |   2    3    0    1    6    7    4    5  
+   3  |   3    2    1    0    7    6    5    4  
+   4  |   4    5    6    7    0    1    2    3  
+   5  |   5    4    7    6    1    0    3    2  
+   6  |   6    7    4    5    2    3    0    1  
+   7  |   7    6    5    4    3    2    1    0  
+
+Subtraction Table:
+
+   -  |   0    1    2    3    4    5    6    7  
+-----------------------------------------------
+   0  |   0    1    2    3    4    5    6    7  
+   1  |   1    0    3    2    5    4    7    6  
+   2  |   2    3    0    1    6    7    4    5  
+   3  |   3    2    1    0    7    6    5    4  
+   4  |   4    5    6    7    0    1    2    3  
+   5  |   5    4    7    6    1    0    3    2  
+   6  |   6    7    4    5    2    3    0    1  
+   7  |   7    6    5    4    3    2    1    0  
+
+Multiplication Table:
+
+   *  |   0    1    2    3    4    5    6    7  
+-----------------------------------------------
+   0  |   0    0    0    0    0    0    0    0  
+   1  |   0    1    2    3    4    5    6    7  
+   2  |   0    2    4    6    3    1    7    5  
+   3  |   0    3    6    5    7    4    1    2  
+   4  |   0    4    3    7    6    2    5    1  
+   5  |   0    5    1    4    2    7    3    6  
+   6  |   0    6    7    1    5    3    2    4  
+   7  |   0    7    5    2    1    6    4    3  
+
+Division Table:
+
+   /  |   0    1    2    3    4    5    6    7  
+-----------------------------------------------
+   0  |   -    0    0    0    0    0    0    0  
+   1  |   -    1    5    6    7    2    3    4  
+   2  |   -    2    1    7    5    4    6    3  
+   3  |   -    3    4    1    2    6    5    7  
+   4  |   -    4    2    5    1    3    7    6  
+   5  |   -    5    7    3    6    1    4    2  
+   6  |   -    6    3    2    4    7    1    5  
+   7  |   -    7    6    4    3    5    2    1  
+
+Enter any expression for evaluation (e.g. (1 + 2) * 4)
+
+&gt; 2 + 4
+6
+&gt; 2 * 4
+3
+&gt; 2*(1 + 3)
+4
+&gt; 2*1 + 2*3
+4
+&gt; 
+</code></pre>
+<p><i><u>Exercise:</u></i> Play around with the calculator.</p>
+<p><i><u>Exercise:</u></i> Try different parameters (e.g. <code>K = 8, Q = 283 (x^8 + x^4 + x^3 + x + 1)</code>). You can try other parameters too but be careful to ensure they are valid.</p>
+<p><i><u>Exercise:</u></i> Do your own implementation of <code>GF(2^k)</code> fields in your preferred programming language.</p>
 <h3>Applications</h3>
-<p>We now know can implement <code>GF(2^k)</code> fields. It's pretty neat how these fields map nicely to bitwise operations. They are a very natural
-paring for computing. It should be no surprise that we see them use in lots of applications.</p>
+<p>We now know how to implement <code>GF(2^k)</code> fields. It's pretty neat how these fields map nicely to bitwise operations. They are a very natural
+pairing for computing. It should be no surprise that we see them use in lots of very practical applications.</p>
 <p>Some applications include:</p>
 <ul>
-<li>AES Encryption uses <code>GF(2^8)</code> with <code>Q = x^8 + x^4 + x^3 + x + 1  (283)</code></li>
-<li>Reed-Solomon Erasure Codes can use various different <code>GF(2^k)</code> fields depending on the desired properties</li>
 <li>CRC-32 uses <code>GF(2^32)</code> with <code>Q = x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1</code> (actually only requires a "ring")</li>
+<li>Reed-Solomon Erasure Codes can use various different <code>GF(2^k)</code> fields depending on the desired properties</li>
+<li>AES Encryption uses <code>GF(2^8)</code> with <code>Q = x^8 + x^4 + x^3 + x + 1  (283)</code></li>
 <li>Rabin Fingerprinting often uses <code>GF(2^64)</code> to construct a rolling hash function (actually only requires a "ring")</li>
 <li>... and many more ...</li>
 </ul>
+<p>We'll explore many of these soon!</p>
 <h3>Conclusion</h3>
-<p>We're now within striking distance of applications. In fact, you can simply modify the constants <code>K</code> and <code>Q</code> in this <code>GF(2^k)</code> implementation and use it
-for many of the applications listed above!</p>
+<p>Here we've explored how to implement <code>GF(2^k)</code> binary fields using many of the standard bitwise operations available on most computers. This makes these fields
+much more efficient than general <code>GF(p^k)</code> fields. However, there are many much more advanced ways to improve the implementation. Fortunately, we can view these as
+pure optimizations. Right now we have an "acceptable" implementation that we can use to explore real applications. After applications, we can return to optimizing
+<code>GF(2^8)</code> with new appreciation of why it's important!</p>
 <p>If you've made it this far, you're in really excellent shape! If not, I recommend going back to the last section that made sense and attempting again. As I said
-in the intro article, this is a very cummulative subject.</p>
-<p>We could dive into our first application next, but I think its useful to first discuss lookup-table implementations of <code>GF(2^k)</code> first. This will give us a very practical implementation of <code>GF(2^8)</code> with reasonable performance for implementing AES Encryption.</p>
-<p>We'll do this next time! Let's go! (soon)</p>
+in the intro article, this is a very cumulative subject.</p>
+<p>Time to <a href="https://www.youtube.com/watch?v=4ctK1aoWuqY">Get Schwifty</a> in here (soon)</p>
 <!--
-[next](galois_fields_for_great_good_08.html)
+[here](galois_fields_for_great_good_08.html)
 -->
   </div>
   <div id="footer">

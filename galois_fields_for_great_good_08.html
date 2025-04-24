@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js" integrity="sha384-v6mkHYHfY/4BWq54f7lQAdtIsoZZIByznQ3ZqN38OL4KCsrxo31SLlPiak7cj/Mg" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (08)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_07.html">previous</a> |
+next (soon)</p>
+<!--
+[next](galois_fields_for_great_good_09.html)
+-->
+
+<h2>Cyclic Redundancy Check (CRC)</h2>
+<p>This is part 7 of a series on Abstract Algebra. In this part, we'll explain and implement Cyclic Redundancy Check (CRC) codes.</p>
+<p>This is a very exciting post in this series as it represents a phase change. We're now shifting our focus away from the foundational material and towards applications. We'll start with a fairly straight-forward application: CRC codes. If you've followed and understood the series so far, you'll be in excellent shape to deeply understand these.</p>
+<p>Let's get started!</p>
+<h3>Motivation for Coding Theory</h3>
+<p>It's pretty easy to take modern telecommunication systems for granted. They are pretty reliable these days. Failure is more of the exception than the rule. But this wasn't always the case. In fact, a lot of work has gone into making them reliable.</p>
+<p>The core problem is that physics conspires against us by relentlessly corrupting signals. Much work has gone into preventing noise and corruption in communication systems, but it's not possible to build a completely noiseless system. 
+At best, we can hope to drive the probability of "noise" low, accepting that we still have to use a noisy/corrupting/imperfect medium for all communications.</p>
+<p>So, if signal corruptions can still happen, how can we make these systems reliable?</p>
+<p>The answer comes from Information Theory, initiated by Claude Shannon in the late 1940s (<a href="https://en.wikipedia.org/wiki/A_Mathematical_Theory_of_Communication">wiki</a>). For our purposes, the theory implies that if we use an encoding with enough redundancy, we can overcome any corruption or noise issues. This leads us to an area of study called <a href="https://en.wikipedia.org/wiki/Coding_theory">Coding Theory</a>.</p>
+<p>This is where we will find rich applications of abstract algebra to encode message data in ways that will be resilient to the capricious whims of physics!</p>
+<h3>Codes for Detecting Corruption</h3>
+<p>Suppose we wish to send the binary message:</p>
+<pre>
+0100010101011010
+</pre>
+
+<p>We believe our communications medium may corrupt any bit, flipping it.</p>
+<h4>Parity bit</h4>
+<p>One very simple scheme is to add a <i>parity bit</i>. Here we sum all bits in our message and add an additional bit
+that makes the message have an even number of bits set to 1.</p>
+<p>Using our above example we have 7 bits set, so we add a parity bit set to 1 such that 8 bits are set in total:</p>
+<pre>
+0100010101011010<span style='color:red'>1</span>
+</pre>
+
+<p>Now, if any bit is flipped during transmission, we'll count an odd number of bits and know that some corruption happened. This does not help us correct the error, so we'd need to request re-transmission of the message.</p>
+<p>But, if more than one bit is corrupted, then we can be fooled into thinking the message is valid! Not good! How can we improve the "parity" to make it more resilient to corruptions?</p>
+<h4>Checksum bits</h4>
+<p>An intuitive answer is to just expand the parity to many bits. This is called a <i>checksum</i>. The structure of a message with a checksum looks like this:</p>
+<pre><code>&lt;n-bits of message data&gt; &lt;p-bits of checksum&gt;
+</code></pre>
+<p>As long as <code>n</code> is much bigger than <code>p</code>, the overhead of the checksum is insignificant overhead.</p>
+<p>But, how do we construct a good checksum? We want a "bit-mixing" property where any one bit flip should
+alter many checksum bits. The checksum should ideally behave like a random number assigned to a message. Even if a message changes slightly, it is still a different message with a different assigned number.</p>
+<p>How can we do this?</p>
+<h3>Using Abstract Algebra to compute a Checksum</h3>
+<p>A clever approach is to treat the entire n-bit message as an element in <code>GF(2^n)</code> and then reduce it to an
+element in <code>GF(2^p)</code> using some polynomial <code>Q</code> (like in the <a href="galois_fields_for_great_good_07.html">previous section</a>). This idea leads immediately to CRC codes!</p>
+<p>Let's use an example to drive home the idea:</p>
+<pre><code class="language-text">n = 8
+p = 3
+message = 01001011
+</code></pre>
+<p>Let's consider the message bits as an element of <code>GF(2^n)</code>. In this context, our message is the polynomial:</p>
+<pre><code class="language-text">x^6 + x^3 + x + 1
+</code></pre>
+<p>Maybe it's a little weird to think of message data as a polynomial, but by this point in the series we should be excited by the power representation gives us!</p>
+<p>Now, we need a reducing polynomial for <code>GF(2^3)</code>. How about the one we used in the last article:</p>
+<pre><code class="language-text">Q = x^3 + x + 1 (decimal: 11, binary: 1011)
+</code></pre>
+<p><i><u>Exercise:</u></i> Reduce the message polynomial by <code>Q</code> to get an element in <code>GF(2^3)</code>. Do this before continuing.</p>
+<p>We'll show our work below. The easiest way to do this is by "eliminating" bits from left to right with XOR. As discussed last time, in <code>GF(2^k)</code> this
+is equivalent to subtracting some "multiple" of <code>Q</code>.</p>
+<pre><code class="language-text">     01001011
+   ^  1011
+   ------------
+     00010011
+   ^    1011
+   ------------
+     00000101
+</code></pre>
+<p>So, our resulting polynomial in <code>GF(2^3)</code> is <code>x^2 + 1</code> (decimal: <code>5</code>, binary: <code>101</code>)</p>
+<p>Using this checksum, we'd transmit the following sequence of bits:</p>
+<pre>
+01001011<span style='color:red'>101</span>
+</pre>
+
+<p>And the receiver can then compute the checksum with the same algorithm and compare it to the value it received.</p>
+<h3>Ubiquity of CRC codes</h3>
+<p>These CRC codes can be implemented very cheaply in hardware using a shift-register of p-bits and some xor gates. This helped them gain popularity.
+A CRC code depends on the checksum size (parameter: <code>p</code>) and the polynomial used for reducing (parameter: <code>Q</code>).</p>
+<p>Below is a few CRC code configurations:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Uses</th>
+<th>Size (<code>p</code>)</th>
+<th>Polynomial (<code>Q</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRC-3-GSM</td>
+<td>Mobile Networks</td>
+<td><code>3</code></td>
+<td><code>x^3 + x + 1</code></td>
+</tr>
+<tr>
+<td>CRC-8-GSM-B</td>
+<td>Mobile Networks</td>
+<td><code>8</code></td>
+<td><code>x^8 + x^6 + x^3 + 1</code></td>
+</tr>
+<tr>
+<td>CRC-16-CCITT</td>
+<td>Bluetooth and others</td>
+<td><code>16</code></td>
+<td><code>x^16 + x^12 + x^5 + 1</code></td>
+</tr>
+<tr>
+<td>CRC-32</td>
+<td>Ethernet and others</td>
+<td><code>32</code></td>
+<td><code>x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1</code></td>
+</tr>
+</tbody>
+</table>
+<p>Wikipedia maintains a larger list, <a href="https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Polynomial_representations">here</a>.</p>
+<h2>Implementing CRC-32 in Software</h2>
+<h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/crc32.rs"><code>src/crc32.rs</code></a></h3>
+<h4>Implementing CRC-32 Checksum</h4>
+<p>CRC-32 is a checksum that reduces n-bits into 32-bits. Viewed as an operation in an abstract algebra, we are reducing a polynomial in <code>GF(2^n)</code> to a polynomial in <code>GF(2^32)</code>.</p>
+<p>The polynomial used for this reduction is:</p>
+<pre><code class="language-text">x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
+</code></pre>
+<p>In hexadecimal this polynomial is <code>0x104c11db7</code>, but its typical to drop the leading term (<code>x^32</code>) so the polynomial number fits
+in a 32-bit unsigned integer. After applying that adjustment, we get:</p>
+<pre><code class="language-rust">const Q: u32 = 0x04c11db7;
+</code></pre>
+<p>Our approach to implementing CRC-32 will be similar to a hardware implementation. This is not the fastest approach
+in software, but it is the simplest and easiest to understand. It also helps us understand why CRC codes are so
+nice to implement in hardware.</p>
+<p>To start, we'll define a type for the current checksum state, which should be exactly 32-bits</p>
+<pre><code class="language-rust">#[derive(Debug, Clone, Copy, PartialEq)]
+struct CRC(u32);
+
+impl CRC {
+    fn new() -&gt; CRC {
+        CRC(0)
+    }
+}
+</code></pre>
+<h4>Decomposing into shifts</h4>
+<p>Consider the polynomial:</p>
+<pre><code class="language-text">x^4 + x^3 + x + 1
+</code></pre>
+<p>We can decompose this polynomial as follows:</p>
+<pre><code class="language-text">(x^3 + x^2 + 1)*x + 1
+</code></pre>
+<p>As we have discussed in the previous section, multiplying by <code>x</code> in <code>GF(2^k)</code> is the same as shifting bits to the left by one. Rewriting, we have:</p>
+<pre><code class="language-text">(x^3 + x^2 + 1)&lt;&lt;1 + 1
+</code></pre>
+<p>Decomposing repeatedly:</p>
+<pre><code class="language-text">((x^2 + x)&lt;&lt;1 + 1)&lt;&lt;1 + 1
+(((x + 1)&lt;&lt;1 + 0)&lt;&lt;1 + 1)&lt;&lt;1 + 1
+((((1)&lt;&lt;1 + 1)&lt;&lt;1 + 0)&lt;&lt;1 + 1)&lt;&lt;1 + 1
+</code></pre>
+<p>Thinking about this as raw bit operations, notice that we can build up any polynomial by left-shifting and adding (xor-ing) new bits one-at-a-time. In this particular case, we perform:</p>
+<pre><code class="language-text">xor 1
+left-shift
+xor 1
+left-shift
+xor 0
+left-shift
+xor 1
+</code></pre>
+<p><i><u>Exercise:</u></i> Decompose <code>x^5 + x^2 + x</code> into shifts and bit insertions.</p>
+<h4>Reducing the left-shift (<code>a &lt;&lt; 1</code>)</h4>
+<p>In the implementation of <code>GF(2^k)</code> we found that we needed to reduce <code>a &lt;&lt; 1</code> from a <code>k+1</code> bit number to a <code>k</code> bit number. For CRC, we need to do the same thing. Whenever, the kth bit is set, we need to subtract (XOR) away <code>Q</code>.</p>
+<p>Let's modify the sequence above to include these reduce operations:</p>
+<pre><code class="language-text">xor 1
+left-shift
+if most-significant-bit set, xor Q
+xor 1
+left-shift
+if most-significant-bit set, xor Q
+xor 0
+left-shift
+if most-significant-bit set, xor Q
+xor 1
+</code></pre>
+<p><i><u>Exercise:</u></i> Decompose <code>x^5 + x^2 + x</code> into shifts and bit insertions and reductions in <code>GF(2^3)</code></p>
+<p>As you can see, a CRC code can be implemented very simply by just shifting the bits and applying xors. By reducing
+every time the MSB is set, we ensure that we always have a number in the checksum field <code>GF(2^p)</code>. When the input
+stream runs out of bits, we have our checksum!</p>
+<p>Let's implement it:</p>
+<pre><code class="language-rust">impl CRC {
+    fn append_bit(&amp;mut self, bit: u8) {
+        // Extract the most-significant-bit (MSB), we will need to check it after shifting
+        let msb = (self.0 &gt;&gt; 31) &amp; 1;
+
+        // Shift the bits (notice: this overwrites the old MSB)
+        let mut shifted = self.0 &lt;&lt; 1;
+
+        // Check if we need to reduce. If the MSB was set, then we have a 33-bit number
+        // and we need to reduce it back to 32-bits using Q (notice: Q doesn't include
+        // the MSB. Since the MSB was shifted off, it has been implicitly cleared already)
+        if msb == 1 { shifted ^= Q; }
+
+        // Add the next bit and save the result
+        self.0 = shifted ^ (bit as u32);
+    }
+}
+</code></pre>
+<p>And that's the core operation of CRC-32, the rest is just supporting details!</p>
+<p><i><u>Exercise:</u></i> Really make sure you follow this algorithm. It can be helpful to draw diagrams
+of bits shifting, new bits entering, and Q getting XOR'd. You can use the following parameters to construct
+a simpler example: <code>p = 3, Q = x^3 + x + 1 (decimal: 11, binary: 1011)</code></p>
+<p>Next up, we need a method to append an entire byte, rather than one bit. This is pretty simple. We will
+just iterate each bit from MSB to LSB, inserting each bit:</p>
+<pre><code class="language-rust">impl CRC {
+    fn append_byte(&amp;mut self, byte: u8) {
+        // For each byte, just append each bit from MSB to LSB
+        for i in (0..8).rev() {
+            let bit = (byte &gt;&gt; i)&amp;1;
+            self.append_bit(bit);
+        }
+    }
+}
+</code></pre>
+<h4>A routine for the <code>cksum</code> tool</h4>
+<p>We'll now use the above routines to construct the same checksum as the Unix <code>cksum</code> tool. This tool is specified
+by the POSIX Standard, IEEE Std 1003.1-2017 (<a href="https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cksum.html">here</a>).</p>
+<p>For the most part, we'll simply be calling our <code>append_byte()</code> routine, but there are a few additional quirks that we'll explain as we go:</p>
+<pre><code class="language-rust">pub fn cksum(dat: &amp;[u8]) -&gt; u32 {
+    // Initialize our CRC state
+    let mut crc = CRC::new();
+
+    // Insert all of the data bytes in order
+    for b in dat {
+        crc.append_byte(*b);
+    }
+
+    // Quirk #1: The `cksum` tool appends the data length also. There is no fixed size
+    // for the length field. Instead, we append data bytes from LSB to MSB. We stop
+    // appending bytes when the MSB becomes zero.
+    let mut len: u64 = dat.len() as u64;
+    loop {
+        // Append the lowest byte
+        crc.append_byte(len as u8);
+
+        // Shift the byte off
+        len &gt;&gt;= 8;
+
+        // When the remaining bytes are zero, we're done!
+        if len == 0 {
+            break;
+        }
+    }
+
+    // Quirk #2: The `cksum` tool always appends an empty 32-bits after everything.
+    // The main reason is to force each bit to cause a reduction (if required).
+    // Each reduction causes bit-mixing/scrambling throughout the checksum.
+    for _ in 0..32 {
+        crc.append_bit(0);
+    }
+
+    // Quirk #3: The `cksum` tool inverts all the bits in the final result. The author
+    // doesn't have an immediate justification for this operation. (Notice: In Rust
+    // code, '!crc' is bitwise inversion. In C code and many related languages, this
+    // would be '~crc' instead)
+    !crc.0
+}
+</code></pre>
+<h4>Testing Time</h4>
+<p>Here are some tests that verify our implementation matches the values computed by the <code>cksum</code> tool. We also have
+a test here demonstrating a desired property of a good checksum. Notably, if one bit changes, we want many
+checksum bits to change.</p>
+<pre><code class="language-rust">#[cfg(test)]
+mod test {
+    use super::*;
+
+    // Check some well-known strings for the right CRC-32 value
+    #[test]
+    fn test_strings() {
+        assert_eq!(cksum(b&quot;&quot;), 0xffffffff);
+        assert_eq!(cksum(b&quot;a&quot;), 0x48c279fe);
+        assert_eq!(cksum(b&quot;123456789&quot;), 0x377a6011);
+        assert_eq!(cksum(b&quot;finite fields are super fun when you really understand them!&quot;), 0xa695ef0f);
+    }
+
+    // Test that a single flipped bit causes the checksum to flip many bits!
+    #[test]
+    fn test_one_flipped_bit() {
+        let a: u64 = 0x42d5151330d94a84;
+        let b = a ^ (1u64 &lt;&lt; 30);  // flip the 30th bit
+
+        // One bit flip causes many bits to flip in the checksum, very good!
+        assert_eq!(cksum(&amp;a.to_le_bytes()), 0xd146283d);
+        assert_eq!(cksum(&amp;b.to_le_bytes()), 0x01c33b8f);
+    }
+}
+</code></pre>
+<p><i><u>Exercise:</u></i> Why does <code>cksum(b"")</code> result in <code>0xffffffff</code> when no set bits were appended ?</p>
+<p><i><u>Exercise:</u></i> Why does <code>cksum(b"a")</code> result in many set bits even though "a" is only one byte?</p>
+<p><i><u>Exercise:</u></i> Can you explain why altering a single input bit can significantly change the checksum?</p>
+<h3>Building and Testing</h3>
+<p>The above code can be built and tested the normal rust ways:</p>
+<pre><code>cargo test
+cargo build
+</code></pre>
+<h2>Command-line <code>cksum</code> tool</h2>
+<p>Finally, we'll implement a command-line <code>cksum</code> tool</p>
+<h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/bin/crc32_cksum.rs"><code>src/bin/crc32_cksum.rs</code></a></h3>
+<pre><code class="language-rust">use std::io::{self, Read};
+use learn_you_galois_fields_for_great_good::crc32;
+
+fn main() -&gt; io::Result&lt;()&gt; {
+    let mut buffer = String::new();
+    io::stdin().read_to_string(&amp;mut buffer)?;
+
+    let cksum = crc32::cksum(buffer.as_bytes());
+    println!(&quot;{} {}&quot;, cksum, buffer.len());
+
+    Ok(())
+}
+</code></pre>
+<h3>Comparing to the standard <code>cksum</code> tool</h3>
+<p>Let's compare our tool's output to a standard Unix <code>cksum</code> tool:</p>
+<pre><code class="language-shell">$ echo -n 'a' | ./target/debug/crc32_cksum
+1220704766 1
+
+$ echo -n 'a' | cksum
+1220704766 1
+
+</code></pre>
+<pre><code class="language-shell">$ echo -n 'I Love Abstract Algebra' | ./target/debug/crc32_cksum
+1470057247 23
+
+$ echo -n 'I Love Abstract Algebra' | cksum
+1470057247 23
+
+</code></pre>
+<h2>Discussion</h2>
+<h3>It’s actually a Ring</h3>
+<p>Throughout this article, we’ve referred to the checksum as belonging to the <code>GF(2^p)</code> field. But, we have never needed a multiplicative inverse in constructing a CRC. In Abstract Algebra this is known as a <a href="https://en.wikipedia.org/wiki/Ring_(mathematics)">Ring</a>.</p>
+<p>However, we did use a reducing polynomial. So, what gives? The answer is that this polynomial does not have to be irreducible! We can construct a perfectly acceptable CRC with a polynomial that can be factored. In fact the CRC-40-GSM code (<a href="https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Polynomial_representations">see here</a>) uses <code>x^40 + x^26 + x^23 + x^17 + x^3 + 1 = (x^23 + 1)(x^17 + x^3 + 1)</code> for its polynomial. In practice, however, the polynomial is often irreducible as they tend to yield better error-detecting properties.</p>
+<h3>Quirks in practice</h3>
+<p>The algebraic structure we discussed here applies to all CRC codes, but many implementations have additional weird quicks in practice. Here is a short but incomplete list of some quirks you might experience in common implementations:</p>
+<ul>
+<li><b>Initialization values:</b> We used <code>0</code> as an initialization value. This is most mathematically justified. But, you'll see other values, such as <code>0xffffffff</code>. A motivation is that this causes more reduction operations and more bit-scrambling.</li>
+<li><b>Push-through bits:</b> In our <code>cksum</code> implementation with appending 32 zero bits at the very end. This isn't required by the mathematical structure, but it's important to make sure that all bits end up getting scrambled by the reducing polynomial.</li>
+<li><b>Bit reversal:</b> Different algorithms insert bits in reversed order. This is likely most of a quirk of the original application (e.g. how bits were serialized in some hardware device).</li>
+<li><b>Output XOR:</b> Some codes will XOR the final value with some hardcoded constant. In the <code>cksum</code> implementation, the final inversion could be viewed as an XOR with <code>0xffffffff</code>. In practice, these can be arbitrary values. Generally, these output
+XORs don't enhance the code's error detecting properties.</li>
+</ul>
+<p>This is just a sampling of some common quirks. Many more exist. When implementing a CRC code, you should be careful to pay attention to subtle details and quirks.</p>
+<h3>Optimizing</h3>
+<p>Much can be done to optimize CRC codes in software. Our version here is just a simple reference implementation. We've focused on understandability over everything else. It's out of scope for us to dive deep into optimizations. But, we'll mention at least a few common ones here:</p>
+<ul>
+<li>
+<p><b>Lookup-tables:</b> Computing these codes bit-by-bit is very slow in both software and hardware. Often we can instead precompute a lookup-table for the most-significant-byte. This allows us to shift out 8-bits at a time using the lookup-table. Many variants of this idea exist for even more speedup.</p>
+</li>
+<li>
+<p><b>Special CPU Instructions:</b> Many computer architectures include native instructions for computing common CRC codes. Its worth noting that these instructions alone may not yield the fastest implementation and performance
+can vary between CPU editions</p>
+</li>
+<li>
+<p><b>Vectorization and CPU Architecture:</b> Fast implementations will want to consider heavy use of vectorization. Operating on a large vector of bits in a single instruction is going to perform much better than bit-by-bit. But, these implementations can get complicated fast.</p>
+</li>
+</ul>
+<p>Generally, implementing a very efficient CRC code requires a lot of work. The bit-by-bit model is quite simple computationally, but it takes a lot of work to map it onto a modern out-of-order superscalar vectorized machine with a complicated memory hierarchy.</p>
+<h3>More Resources</h3>
+<p>A lot of ink has been spilled discussing CRC codes and I'm far from an authority on the subject. If you'd like to dive in further, here are some good starting points:</p>
+<ul>
+<li><strong>A Painless Guide to CRC Error Detection Algorithms</strong> by Ross N. Williams (<a href="http://ross.net/crc/download/crc_v3.txt">original</a>) (<a href="ross.net__crc__download__crc_v3.txt">xorvoid.com</a>)</li>
+<li><strong>A Systematic Approach to Building High
+Performance, Software-based, CRC Generators</strong> by Michael E. Kounavis and Frank L. Berry (<a href="https://web.archive.org/web/20061216135550/http://www.intel.com/technology/comms/perfnet/download/CRC_generators.pdf">archive.org</a>)</li>
+<li><strong>Reverse-Engineering a CRC Algorithm</strong> by Gregory Ewing (<a href="https://web.archive.org/web/20110807100031/http://www.cosc.canterbury.ac.nz/greg.ewing/essays/CRC-Reverse-Engineering.html">archive.org</a>)</li>
+</ul>
+<h2>Conclusion</h2>
+<p>And that brings us to the end of our first application in this series. Its pretty exciting to see all that
+hard work starting to pay off!</p>
+<p>Hopefully this article helps demonstrate how straightforward CRC codes can be from both a theory and implementation perspective. Without the background in abstract algebra, CRC codes
+can seem unmotivated and mysterious. But, with the background, they should feel almost trivial. To me it feels almost like cheating: just treat data as a gigantic polynomial and long-divide it to a smaller polynomial. That's it?!</p>
+<p>So, is this the end? Definitely not, <a href="https://www.youtube.com/watch?v=b4ztfrr8fls">this is the series that doesn't end...</a></p>
+<p>See you next time for more cool stuff (soon)!</p>
+<!--
+[next](galois_fields_for_great_good_09.html)
+-->
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

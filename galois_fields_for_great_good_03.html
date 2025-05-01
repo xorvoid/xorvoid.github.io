@@ -168,15 +168,15 @@ methods in later sections.</p>
 </code></pre>
 <p>Similarly to subtraction, we can implement division in terms of multiplication
 and inversion since: <code>a / b = a * inv(b)</code></p>
-<p>Notice again that we use a <code>Result&lt;&gt;</code> to communicate that division by zero will fail</p>
+<p>Notice we that division by zero panics. We expect the user to avoid attempting a divide by zero.</p>
 <pre><code class="language-rust">impl Div&lt;GF&gt; for GF {
-  type Output = Result&lt;GF, String&gt;;
-  fn div(self, rhs: Self) -&gt; Result&lt;GF, String&gt; {
+  type Output = GF;
+  fn div(self, rhs: Self) -&gt; GF {
     // Important: Cannot divide by zero
     if rhs.0 == 0 {
-      return Err(&quot;Cannot divide by zero&quot;.to_string());
+      panic!(&quot;Cannot divide by zero&quot;);
     }
-    Ok(self * rhs.invert().unwrap())
+    self * rhs.invert().unwrap()
   }
 }
 </code></pre>
@@ -303,29 +303,32 @@ mod tests {
   #[test]
   fn test_div() {
     // GF(5) | 0 / 1 = 0
-    assert_eq!(GF::new(0) / GF::new(1), Ok(GF::new(0)));
+    assert_eq!(GF::new(0) / GF::new(1), GF::new(0));
     // GF(5) | 0 / 2 = 0
-    assert_eq!(GF::new(0) / GF::new(2), Ok(GF::new(0)));
-    // GF(5) | 1 / 0 = ERROR
-    assert!(matches!(GF::new(1) / GF::new(0), Err(_)));
-    // GF(5) | 2 / 0 = ERROR
-    assert!(matches!(GF::new(2) / GF::new(0), Err(_)));
+    assert_eq!(GF::new(0) / GF::new(2), GF::new(0));
     // GF(5) | 1 / 1 = 1
-    assert_eq!(GF::new(1) / GF::new(1), Ok(GF::new(1)));
+    assert_eq!(GF::new(1) / GF::new(1), GF::new(1));
     // GF(5) | 1 / 2 = 3
-    assert_eq!(GF::new(1) / GF::new(2), Ok(GF::new(3)));
+    assert_eq!(GF::new(1) / GF::new(2), GF::new(3));
     // GF(5) | 2 / 2 = 1
-    assert_eq!(GF::new(2) / GF::new(2), Ok(GF::new(1)));
+    assert_eq!(GF::new(2) / GF::new(2), GF::new(1));
     // GF(5) | 2 / 3 = 4
-    assert_eq!(GF::new(2) / GF::new(3), Ok(GF::new(4)));
+    assert_eq!(GF::new(2) / GF::new(3), GF::new(4));
     // GF(5) | 3 / 3 = 1
-    assert_eq!(GF::new(3) / GF::new(3), Ok(GF::new(1)));
+    assert_eq!(GF::new(3) / GF::new(3), GF::new(1));
     // GF(5) | 2 / 4 = 3
-    assert_eq!(GF::new(2) / GF::new(4), Ok(GF::new(3)));
+    assert_eq!(GF::new(2) / GF::new(4), GF::new(3));
     // GF(5) | 3 / 4 = 2
-    assert_eq!(GF::new(3) / GF::new(4), Ok(GF::new(2)));
+    assert_eq!(GF::new(3) / GF::new(4), GF::new(2));
     // GF(5) | 4 / 4 = 1
-    assert_eq!(GF::new(4) / GF::new(4), Ok(GF::new(1)));
+    assert_eq!(GF::new(4) / GF::new(4), GF::new(1));
+  }
+
+  // TEST: Division by zero panics
+  #[should_panic]
+  #[test]
+  fn test_div_zero_panic() {
+    let _ = GF::new(2) / GF::new(0);
   }
 }
 </code></pre>

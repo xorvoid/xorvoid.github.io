@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js" integrity="sha384-v6mkHYHfY/4BWq54f7lQAdtIsoZZIByznQ3ZqN38OL4KCsrxo31SLlPiak7cj/Mg" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Learn you Galois Fields for Great Good (11)</h1>
+<p>Navigation |
+<a href="galois_fields_for_great_good_00.html">first</a> |
+<a href="galois_fields_for_great_good_10.html">previous</a> |
+next (soon)</p>
+<!--
+[next](galois_fields_for_great_good_12.html)
+-->
+
+<h2>Reed-Solomon as Linear Algebra</h2>
+<p>This is part 10 of a series on Abstract Algebra. In this part, we'll continue exploring Reed-Solomon Erasure Codes.</p>
+<p>Last time we introduced Reed-Solomon in the context of polynomial evaluation and interpolation. This is the original view taken in the Reed-Solomon paper (CHECK THIS CLAIM AND LINK PAPER!!!).
+Here, we'll show some another way to interpret Reed-Solomon codes: as ordinary linear algebra!</p>
+<p>Note: This article assumes the reader understands: linear independence, linear combinations, matrix rank, and non-singularity conditions.</p>
+<h3>A Matrix for Polynomial Evaluation</h3>
+<p>In the previous sections, we've often written a polynomial as just a vector of coefficients. For example, <code>p(x) = 5x^2 + 2x + 3</code> can be written as <code>[5, 2, 3]</code>.</p>
+<p>Suppose we wish to evaluate this polynomial at <code>x=2</code>. Using linear algebra, we can represent this evaluation as an inner-product (dot-product):</p>
+<p>
+$$
+\begin{align}
+p(2) &=
+5(2)^2 + 2(2) + 3
+\nonumber
+\\
+&= \left[ \begin{array}{ccc}
+1 & 2 & 2^2 \\
+\end{array} \right]
+
+\left[ \begin{array}{ccc}
+3 \\ 2 \\ 5 \\
+\end{array} \right]
+\nonumber \\
+&= 27
+\nonumber
+\end{align}
+$$
+</p>
+
+<p>Similarly, we can evaluate many points $x = 1, 2, 3, 4, 5$ with a single matrix-vector product:</p>
+<p>
+$$
+\begin{align}
+p(\textbf{a})
+&= \left[ \begin{array}{ccc}
+1 & 1 & 1^2 \\
+1 & 2 & 2^2 \\
+1 & 3 & 3^2 \\
+1 & 4 & 4^2 \\
+1 & 5 & 5^2 \\
+\end{array} \right]
+
+\left[ \begin{array}{ccc}
+3 \\ 2 \\ 5 \\
+\end{array} \right]
+\nonumber
+
+= \left[ \begin{array}{ccc}
+10 \\
+27 \\
+54 \\
+91 \\
+138 \\
+\end{array} \right]
+\nonumber \\
+
+&= \textbf{A}
+\left[ \begin{array}{ccc}
+3 \\ 2 \\ 5 \\
+\end{array} \right]
+\nonumber
+\end{align}
+$$
+</p>
+
+<p>Notice that if we choose fixed evaluation points, then our $\textbf{A}$ matrix is also fixed.</p>
+<p>Let's study this matrix and see what we can learn!</p>
+<h3>Vandermonde Matrices</h3>
+<p>The $\textbf{A}$ matrix constructed is known as a <a href="https://en.wikipedia.org/wiki/Vandermonde_matrix"><strong>Vandermonde matrix</strong></a>.</p>
+<p>Given some distinct constants $x_0, x_1, \dots, x_{n-1}$ the vandermonde matrix has the form:</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & x_0 & x_0^2 & ... & x_0^{n-1} \\
+1 & x_1 & x_1^2 & ... & x_1^{n-1} \\
+1 & x_2 & x_2^2 & ... & x_2^{n-1} \\
+1 & x_3 & x_3^2 & ... & x_3^{n-1} \\
+1 & x_4 & x_4^2 & ... & x_4^{n-1} \\
+... \\
+1 & x_{n-1} & x_{n-1}^2 & ... & x_{n-1}^{n-1} \\
+\end{array} \right]
+$$
+</p>
+
+<p>A key property of this matrix is that it is always invertible as long as the $x_i$ are distinct (ADD PROOFS). This also gives intuition to what's happening in Reed-Solomon. If we construct a $5 \times 3$ Vandermonde matrix (as above), then we can "erase" any 2 rows and obtain a square $3 \times 3$ Vandermonde matrix. And this matrix will always be invertible!</p>
+<p>This also suggests some straightforward approaches to implementing Reed-Solomon using ordinary linear algebra.</p>
+<h3>Encoding/Decoding in Matrix Form</h3>
+<p>Let $A$ be the Vandermonde matrix for our desired Reed-Solomon code. Let $d$ be a vector of data to encode. And let $e$ be the encoded output vector.</p>
+<p>Encoding is simply:</p>
+<p>
+$$
+\textbf{e} = \textbf{A} \textbf{d}
+$$
+</p>
+
+<p>For decoding, we simply erase rows from $A$ and $e$ until we have a square Vandermonde $A_r$ and $e_r$. And then we simply solve:</p>
+<p>
+$$
+\textbf{d} = \textbf{A}_r^{-1} \textbf{e}_r
+$$
+</p>
+
+<p>That's it. The linear algebra view of Reed-Solomon is just ordinary matrix-vector multiply and ordinary linear system solving using a matrix that is gaurenteed to always be invertible (Vandermonde).</p>
+<h3>A Worked Example</h3>
+<p>Let's work through an example to drive the idea home. We'll use the $5 \times 3$ Vandermonde matrix we constructed above:</p>
+<p>
+$$
+\textbf{A} = 
+\left[ \begin{array}{ccc}
+1 & 1 & 1^2 \\
+1 & 2 & 2^2 \\
+1 & 3 & 3^2 \\
+1 & 4 & 4^2 \\
+1 & 5 & 5^2 \\
+\end{array} \right]
+=
+\left[ \begin{array}{ccc}
+1 & 1 & 1 \\
+1 & 2 & 4 \\
+1 & 3 & 9 \\
+1 & 4 & 16 \\
+1 & 5 & 25 \\
+\end{array} \right]
+$$
+</p>
+
+<p>For fun, let's use a new data vector:</p>
+<p>
+$$
+\textbf{d} = 
+\left[ \begin{array}{ccc}
+6 \\ 0 \\ 2
+\end{array} \right]
+$$
+</p>
+
+<p>This data vector cooresponds to the polynomial <code>2x^2 + 6</code>, but we won't need this fact in the linear algebra form.</p>
+<p>Let's encode:</p>
+<p>
+$$
+\textbf{e} =
+\textbf{A} \textbf{d} = 
+\left[ \begin{array}{ccc}
+1 & 1 & 1 \\
+1 & 2 & 4 \\
+1 & 3 & 9 \\
+1 & 4 & 16 \\
+1 & 5 & 25 \\
+\end{array} \right]
+\left[ \begin{array}{ccc}
+6 \\ 0 \\ 2
+\end{array} \right]
+=
+\left[ \begin{array}{ccc}
+8 \\ 14 \\ 24 \\ 38 \\ 56 \\
+\end{array} \right]
+$$
+</p>
+
+<p>Easy peasy.</p>
+<p>Okay, let's decode it. Let's erase the first two rows. This gives us:</p>
+<p>
+$$
+\textbf{A}_r = 
+\left[ \begin{array}{ccc}
+1 & 3 & 9 \\
+1 & 4 & 16 \\
+1 & 5 & 25 \\
+\end{array} \right]\\
+\textbf{e}_r
+=
+\left[ \begin{array}{ccc}
+24 \\ 38 \\ 56 \\
+\end{array} \right]
+$$
+</p>
+
+<p>Let's factor this matrix in <code>LU</code>:</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & 3 & 9 \\
+1 & 4 & 16 \\
+1 & 5 & 25 \\
+\end{array} \right]
+=
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+1 & 1 & 0 \\
+1 & 2 & 1 \\
+\end{array} \right]
+\left[ \begin{array}{ccc}
+1 & 3 & 9 \\
+0 & 1 & 7 \\
+0 & 0 & 2 \\
+\end{array} \right]\\
+$$
+</p>
+
+<p>Solving $Ly = e_r$</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+1 & 1 & 0 \\
+1 & 2 & 1 \\
+\end{array} \right]
+\textbf{y}
+=
+\left[ \begin{array}{ccc}
+24 \\ 38 \\ 56 \\
+\end{array} \right]
+$$
+$$
+\textbf{y}
+=
+\left[ \begin{array}{ccc}
+24 \\ 14 \\ 4 \\
+\end{array} \right] \\
+$$
+</p>
+
+<p>Solving $Ud = y$</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & 3 & 9 \\
+0 & 1 & 7 \\
+0 & 0 & 2 \\
+\end{array} \right]
+\textbf{d} =
+\left[ \begin{array}{ccc}
+24 \\ 14 \\ 4 \\
+\end{array} \right] \\
+$$
+$$
+\textbf{d}
+=
+\left[ \begin{array}{ccc}
+6 \\ 0 \\ 2 \\
+\end{array} \right] \\
+$$
+</p>
+
+<p>As desired $\square$</p>
+<p><i><u>Exercise:</u></i> Repeat this example, but erase the last two rows. You should still recover the $d$ vector</p>
+<h3>Discussion</h3>
+<p>BLAH about the encoding matrix being full-column-rank and thus the encodings are just linear combinations
+of independent vectors. The key being that thes larger vectors can be projected into a lower dimensional space and still be independent! This is the key idea!</p>
+<p>BLAH BLAH about how the vandermonde matrix isn't special. Blah about how we can use Cauchy matrix. Or any matrix that allows these projections to retain full independence.</p>
+<h2>Implementing Reed-Solomon</h2>
+<p>Let's implement this in code! Like the previous section, we'll implement over <code>GF(256)</code>. We'll use our linear algebra routines developed in <a href="galois_fields_for_great_good_09.html">section 9</a>.</p>
+<h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/reed_solomon_linalg.rs"><code>src/reed_solomon_linalg.rs</code></a></h3>
+<pre><code class="language-rust">#![allow(non_snake_case)]
+use crate::gf_256::GF;
+use crate::linalg::Matrix;
+
+
+const K: usize = 3;  // Number of data elements (before encoding)
+const N: usize = 5;  // Number of encoded elements
+</code></pre>
+<p>We also need to specify the evaluation points. We need to have <code>N</code> of these.
+For this variant of Reed-Solomon, it really doesn't matter what we pick. They just need to be
+distinct elements of <code>GF(256)</code>. We choose: <code>[42, 222, 2, 8, 99]</code>.</p>
+<pre><code class="language-rust">const X: [GF; 5] = [
+    GF::new(42), GF::new(222), GF::new(2), GF::new(8), GF::new(99)
+];
+</code></pre>
+<p>We'll also need some y's for cauchy</p>
+<pre><code class="language-rust">const Y: [GF; 3] = [
+    GF::new(66), GF::new(84), GF::new(112),
+];
+</code></pre>
+<p>Build N x K vandermonde encoding matrix</p>
+<pre><code class="language-rust">pub fn vandermonde_encoding_matrix() -&gt; Matrix {
+    let mut out = Matrix::zeros(N, K);
+
+    // for each row
+    for i in 0..N {
+        let x = X[i];
+        let mut elt = GF::new(1);
+        // for each col
+        for j in 0..K {
+            out[(i,j)] = elt;
+            elt = elt * x;
+        }
+    }
+
+    out
+}
+</code></pre>
+<p>Let's write the encode routine. BLAH BLAH.</p>
+<pre><code class="language-rust">pub fn reed_solomon_linalg_encode(A: &amp;Matrix, data: &amp;[GF]) -&gt; Vec&lt;GF&gt; {
+    // Sanity check
+    assert_eq!(data.len(), K);
+
+    // Construct the encoding matrix (A) and data vector (d)
+    let d = Matrix::new(K, 1, data.to_vec());
+
+    // Encode: e = A*d
+    let e = A.matmul(&amp;d);
+
+    // Return the raw data
+    e.data().to_vec()
+}
+</code></pre>
+<p>Let's write the decode routine.</p>
+<pre><code class="language-rust">pub fn reed_solomon_linalg_decode(A: &amp;Matrix, encoded: &amp;[Option&lt;GF&gt;]) -&gt; Option&lt;Vec&lt;GF&gt;&gt; {
+    // Sanity check
+    assert_eq!(encoded.len(), N);
+
+    // First, we need to gather up evaluations that haven't been erased.
+    let mut evals = vec![];
+    let mut idx = vec![];
+    for i in 0..N {
+        if let Some(value) = encoded[i] {
+            evals.push(value);
+            idx.push(i);
+        }
+    }
+
+    // Make sure we have enough evaluations to decode
+    if evals.len() &lt; K {
+        return None; // Too many erasures, can't decode!
+    }
+
+    // Select the rows from the
+    // Construct the matrix (A_r)
+    let A_r = A.select_rows(&amp;idx[..K]);
+    let e_r = Matrix::new(K, 1, evals[..K].to_vec());
+
+    // Decode by linear solve: A_r * d = e_r
+    let d = A_r.solve(&amp;e_r).unwrap();
+
+    // Return the raw data
+    Some(d.data().to_vec())
+}
+</code></pre>
+<p>This passes the exact same tests as the polynomial version!</p>
+<pre><code class="language-rust">#[cfg(test)]
+mod test_vandermonde {
+    use super::*;
+
+    #[test]
+    fn test_encode_decode() {
+        let A = vandermonde_encoding_matrix();
+        let data = vec![GF::new(100), GF::new(150), GF::new(200)];
+
+        // encode
+        let enc = reed_solomon_linalg_encode(&amp;A, &amp;data);
+        assert_eq!(enc, vec![GF::new(160), GF::new(135), GF::new(94), GF::new(104), GF::new(194)]);
+        let recv_all: Vec&lt;_&gt; = enc.iter().map(|x| Some(*x)).collect();
+
+        // decode with no erasures
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv_all), Some(data.clone()));
+
+        // erase element 0 and decode
+        let mut recv = recv_all.clone();
+        recv[0] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 1,2 and decode
+        let mut recv = recv_all.clone();
+        recv[1] = None;
+        recv[2] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 2,4 and decode
+        let mut recv = recv_all.clone();
+        recv[2] = None;
+        recv[4] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 1,2,3 and decode will fail
+        let mut recv = recv_all.clone();
+        recv[1] = None;
+        recv[2] = None;
+        recv[3] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), None);
+
+        // erase elements 0,2,4 and decode will fail
+        let mut recv = recv_all.clone();
+        recv[0] = None;
+        recv[2] = None;
+        recv[4] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), None);
+    }
+}
+</code></pre>
+<h3>Systematic Reed-Solomon</h3>
+<p>We want systematic matrices now...</p>
+<pre><code class="language-rust">pub fn systematic_encoding_matrix() -&gt; Matrix {
+    // First build the normal vandermonde
+    let A = vandermonde_encoding_matrix();
+
+    // Second compute the inverse of the upper K x K square
+    let inv = A.slice_rows(0..K).inverse().unwrap();
+
+    // Third, Multiply
+    A.matmul(&amp;inv)
+}
+</code></pre>
+<h4>Testing again</h4>
+<pre><code class="language-rust">#[cfg(test)]
+mod test_systematic {
+    use super::*;
+
+    #[test]
+    fn test_systematic_encoding() {
+        let A = systematic_encoding_matrix();
+        assert_eq!(A.slice_rows(0..K), Matrix::identity(3));
+    }
+
+    #[test]
+    fn test_encode_decode() {
+        let A = systematic_encoding_matrix();
+        let data = vec![GF::new(100), GF::new(150), GF::new(200)];
+
+        // encode
+        let enc = reed_solomon_linalg_encode(&amp;A, &amp;data);
+        assert_eq!(enc, vec![GF::new(100), GF::new(150), GF::new(200), GF::new(64), GF::new(57)]);
+        let recv_all: Vec&lt;_&gt; = enc.iter().map(|x| Some(*x)).collect();
+
+        // decode with no erasures
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv_all), Some(data.clone()));
+
+        // erase element 0 and decode
+        let mut recv = recv_all.clone();
+        recv[0] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 1,2 and decode
+        let mut recv = recv_all.clone();
+        recv[1] = None;
+        recv[2] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 2,4 and decode
+        let mut recv = recv_all.clone();
+        recv[2] = None;
+        recv[4] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 1,2,3 and decode will fail
+        let mut recv = recv_all.clone();
+        recv[1] = None;
+        recv[2] = None;
+        recv[3] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), None);
+
+        // erase elements 0,2,4 and decode will fail
+        let mut recv = recv_all.clone();
+        recv[0] = None;
+        recv[2] = None;
+        recv[4] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), None);
+    }
+}
+</code></pre>
+<h3>Reed-Solomon with Cauchy matrices</h3>
+<p>We want cauchy matrices now...</p>
+<pre><code class="language-rust">pub fn cauchy_encoding_matrix() -&gt; Matrix {
+    // Sanity check
+    assert_eq!(X.len(), N);
+    assert_eq!(Y.len(), K);
+
+    let mut out = Matrix::zeros(N, K);
+
+    // for each row
+    for i in 0..N {
+        let x = X[i];
+        for j in 0..K {
+            let y = Y[j];
+            out[(i,j)] = GF::new(1)/(x+y);
+        }
+    }
+
+    out
+}
+</code></pre>
+<h4>Testing again</h4>
+<pre><code class="language-rust">#[cfg(test)]
+mod test_cauchy {
+    use super::*;
+
+    #[test]
+    fn test_encode_decode() {
+        let A = cauchy_encoding_matrix();
+        let data = vec![GF::new(100), GF::new(150), GF::new(200)];
+
+        // encode
+        let enc = reed_solomon_linalg_encode(&amp;A, &amp;data);
+        assert_eq!(enc, vec![GF::new(7), GF::new(31), GF::new(153), GF::new(171), GF::new(22)]);
+        let recv_all: Vec&lt;_&gt; = enc.iter().map(|x| Some(*x)).collect();
+
+        // decode with no erasures
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv_all), Some(data.clone()));
+
+        // erase element 0 and decode
+        let mut recv = recv_all.clone();
+        recv[0] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 1,2 and decode
+        let mut recv = recv_all.clone();
+        recv[1] = None;
+        recv[2] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 2,4 and decode
+        let mut recv = recv_all.clone();
+        recv[2] = None;
+        recv[4] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), Some(data.clone()));
+
+        // erase elements 1,2,3 and decode will fail
+        let mut recv = recv_all.clone();
+        recv[1] = None;
+        recv[2] = None;
+        recv[3] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), None);
+
+        // erase elements 0,2,4 and decode will fail
+        let mut recv = recv_all.clone();
+        recv[0] = None;
+        recv[2] = None;
+        recv[4] = None;
+        assert_eq!(reed_solomon_linalg_decode(&amp;A, &amp;recv), None);
+    }
+}
+</code></pre>
+  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

@@ -59,9 +59,9 @@ next (soon)</p>
 <h2>Reed-Solomon Polynomial View</h2>
 <p>This is part 10 of a series on Abstract Algebra. In this part, we'll start exploring Reed-Solomon Erasure Codes.</p>
 <p>I originally planned this topic to be a single article, but as I refreshed my own understanding I realized there are multiple ways of viewing Reed-Solomon, each with its own merits. Most discussions of the topic approach it from one fixed interpretation. This leads to a lot of confusion. Since this series is intended as a beginner's guide/survey, I decided it would be helpful to discuss a few different views/interpretations of Reed-Solomon one-at-a-time.</p>
-<p>This article presents the first and original intepretation: polynomial evaluation and interpolation.</p>
+<p>This article presents the first and original interpretation: polynomial evaluation and interpolation.</p>
 <h3>Motivation for Erasure Coding</h3>
-<p>In the article on CRC codes, I introduced Coding Theory from the orientation of singal noise and corruption. We build an error-detecting code. However, we didn't discuss how one might develop an error-correcting code.</p>
+<p>In the article on CRC codes, I introduced Coding Theory from the orientation of signal noise and corruption. We build an error-detecting code. However, we didn't discuss how one might develop an error-correcting code.</p>
 <p>Consider you have a message to send that can be broken up into <code>3</code> data blocks. We'd like to add redundancy blocks and transmit <code>5</code> encoded blocks. Suppose we have some way to detect block corruption (e.g. using CRC). If a block is corrupted, we can treat it as <em>not present</em> or <strong>erased</strong>. And, as long as only some blocks are erased, we want to be able to decode it successfully.</p>
 <p>Our scheme looks like this:</p>
 <p><img alt="image" src="erasure.png" /></p>
@@ -70,10 +70,10 @@ next (soon)</p>
 <p>So, how can this be done?</p>
 <h3>Polynomials</h3>
 <p>That's right, we can again find the answer with polynomials! And you thought we were done with those... tisk tisk.</p>
-<p>The key here is to notice a very important property of polynomials. They can be representated by either <code>n</code> coefficents or as <code>n</code> evaluations.</p>
+<p>The key here is to notice a very important property of polynomials. They can be represented by either <code>n</code> coefficients or as <code>n</code> evaluations.</p>
 <!-- Consider the 3rd degree polynomial `x^3 + 5x + 59`: -->
 
-<p>Consider the 2nd degree polynomial <code>5x^2 + 2x + 3</code>. We can represent this as the coefficent array <code>[5, 2, 3]</code> (using the monomial basis <code>[x^2, x, 1]</code>).</p>
+<p>Consider the 2nd degree polynomial <code>5x^2 + 2x + 3</code>. We can represent this as the coefficient array <code>[5, 2, 3]</code> (using the monomial basis <code>[x^2, x, 1]</code>).</p>
 <p>Plotting this polynomial:</p>
 <p><img alt="image" src="polynomial_eval.png" /></p>
 <p>In the graph, we've annotated 5 evaluation points of the polynomial. Let's also enumerate them in a table:</p>
@@ -113,19 +113,19 @@ next (soon)</p>
 </tr>
 <tr>
 <td><code>[10, 27, 54]</code></td>
-<td>evaulation points: <code>[1, 2, 3]</code></td>
+<td>evaluation points: <code>[1, 2, 3]</code></td>
 </tr>
 <tr>
 <td><code>[54, 91, 138]</code></td>
-<td>evaulation points: <code>[3, 4, 5]</code></td>
+<td>evaluation points: <code>[3, 4, 5]</code></td>
 </tr>
 <tr>
 <td><code>[10, 54, 91]</code></td>
-<td>evaulation points: <code>[1, 3, 4]</code></td>
+<td>evaluation points: <code>[1, 3, 4]</code></td>
 </tr>
 <tr>
 <td><code>[91, 10, 138]</code></td>
-<td>evaulation points: <code>[4, 1, 5]</code></td>
+<td>evaluation points: <code>[4, 1, 5]</code></td>
 </tr>
 </tbody>
 </table>
@@ -134,22 +134,22 @@ next (soon)</p>
 <h3>Reed and Solomon's Big Idea</h3>
 <p>The big idea of Reed-Solomon Codes is just the following:</p>
 <ul>
-<li>Encoding is polynomial evaluation (from coefficents to evaluations)</li>
-<li>Decoding is polynomial interpolation (from evaluations to coefficents)</li>
+<li>Encoding is polynomial evaluation (from coefficients to evaluations)</li>
+<li>Decoding is polynomial interpolation (from evaluations to coefficients)</li>
 </ul>
 <h4>Encoding</h4>
 <p>We start with the 3 data points (or blocks):</p>
 <pre><code>[5, 2, 3]
 </code></pre>
-<p>In reed-solomon, we immediately treat the data as coefficents of some polynomial. In this case, its the polynomial we plotted above: <code>5x^2 + 2x + 3</code></p>
+<p>In Reed-Solomon, we immediately treat the data as coefficients of some polynomial. In this case, its the polynomial we plotted above: <code>5x^2 + 2x + 3</code></p>
 <p>We now evaluate this polynomial at 5 points. These are just the evaluations given above. Thus, our encoded points (blocks) are just:</p>
 <pre><code>[10, 27, 54, 91, 138]
 </code></pre>
 <p>It's worth noting that there is an implicit shared vector of the evaluation points used (<code>[1, 2, 3, 4, 5]</code>). Often these are simply hardcoded directly into the encode/decode algorithms (as we'll see in future articles).</p>
 <p>This is it for encoding. We simply transmit the above vector and allow any erasures to occur.</p>
 <h4>Decoding</h4>
-<p>For decoding, we with to take any 3 of the 5 evaluations and reconstruct the polynomial coefficents. Suppose (for example) this is <code>[10, 54, 91]</code> (using evaluation points: <code>[1, 3, 4]</code>).</p>
-<p>We need to perform <em>polynomial interpolation</em>. We know from maths that there is exactly one unique set of polynomial coefficents. But, how do we find this?</p>
+<p>For decoding, we with to take any 3 of the 5 evaluations and reconstruct the polynomial coefficients. Suppose (for example) this is <code>[10, 54, 91]</code> (using evaluation points: <code>[1, 3, 4]</code>).</p>
+<p>We need to perform <em>polynomial interpolation</em>. We know from maths that there is exactly one unique set of polynomial coefficients. But, how do we find this?</p>
 <p>At this point, it's common to introduce <a href="">Lagrange Polynomials</a>, but these are harder to compute with. Instead, we'll be using <a href="https://en.wikipedia.org/wiki/Newton_polynomial">Newton Polynomials</a>. We'll introduce it by example.</p>
 <p>We'll build up the polynomial by adding one point at a time. When we add a point, we'll be careful to ensure that the previously added points are still correct.</p>
 <p>Let's start with <code>p(1) = 10</code>. Well this is easy, just a constant function suffices:</p>
@@ -179,9 +179,9 @@ next (soon)</p>
      = 5x^2 + 2x + 3
 </code></pre>
 <p>Excellent. We've recovered the original data vector: <code>[5, 2, 3]</code>!</p>
-<p>Similarly, we can recover the coefficents from any subset of 3 points and in any order!</p>
-<p><i><u>Exercise:</u></i> Construct the newton polynomial using the evaluations <code>[10, 27, 54]</code> (points: <code>[1, 2, 3]</code>). Convert this to monomial form to recover the coefficents. You should get <code>[5, 2, 3]</code>.</p>
-<p><i><u>Exercise:</u></i> Choose another set of 3 evaulations. Build a newton polynomial again and convert to monomial form. You should get <code>[5, 2, 3]</code>. Repeat this exercise until you fully understand decoding.</p>
+<p>Similarly, we can recover the coefficients from any subset of 3 points and in any order!</p>
+<p><i><u>Exercise:</u></i> Construct the newton polynomial using the evaluations <code>[10, 27, 54]</code> (points: <code>[1, 2, 3]</code>). Convert this to monomial form to recover the coefficients. You should get <code>[5, 2, 3]</code>.</p>
+<p><i><u>Exercise:</u></i> Choose another set of 3 evaluations. Build a newton polynomial again and convert to monomial form. You should get <code>[5, 2, 3]</code>. Repeat this exercise until you fully understand decoding.</p>
 <h2>Implementing Reed-Solomon</h2>
 <p>We'll now implement Reed-Solomon using this polynomial idea. Unlike the discussion above, we'll be using <code>GF(256)</code> instead of the Real Numbers. This should feel natural given our prior discussions on fields. Using <code>GF(256)</code> allows us to take data bytes (<code>u8</code>) and encode them to other data bytes (<code>u8</code>).</p>
 <p>An aside: One fun quirk of this construction is that an element of <code>GF(256)</code> itself can be interpreted as a polynomial. So, this view of Reed-Solomon can be seen as "polynomials over polynomials over <code>GF(2)</code>" 😈. Math is great! But, this is actually an important observation that leads to XOR codes like Cauchy-Reed-Solomon. However, we're not ready to discuss that yet.</p>
@@ -190,8 +190,8 @@ next (soon)</p>
 <pre><code class="language-rust">use crate::gf_256::GF;
 </code></pre>
 <h4>Polynomial Evaluation</h4>
-<p>We will need a routine to evaluate polynomials. For this we'll accept an array of coefficents and
-an evalation point. We will use <a href="https://en.wikipedia.org/wiki/Horner%27s_method">Horner's Method</a>
+<p>We will need a routine to evaluate polynomials. For this we'll accept an array of coefficients and
+an evaluation point. We will use <a href="https://en.wikipedia.org/wiki/Horner%27s_method">Horner's Method</a>
 for the algorithm. This allows us to do an evaluation in <code>O(n)</code> time.</p>
 <pre><code class="language-rust">fn poly_eval_point(coeffs: &amp;[GF], x: GF) -&gt; GF {
     let n = coeffs.len();
@@ -203,7 +203,7 @@ for the algorithm. This allows us to do an evaluation in <code>O(n)</code> time.
 }
 </code></pre>
 <p>We'll also add a routine to evaluate many points at once. This routine takes <code>O(nm)</code> time
-where <code>n</code> is the number of coefficents and <code>m</code> is the number of evaluation points</p>
+where <code>n</code> is the number of coefficients and <code>m</code> is the number of evaluation points</p>
 <pre><code class="language-rust">fn poly_eval(coeffs: &amp;[GF], xs: &amp;[GF]) -&gt; Vec&lt;GF&gt; {
     let mut out = vec![];
     for x in xs {
@@ -213,7 +213,7 @@ where <code>n</code> is the number of coefficents and <code>m</code> is the numb
 }
 </code></pre>
 <h4>Polynomial Interpolation</h4>
-<p>For polynomial interpolation, we'll recover the coefficents using an expansion from
+<p>For polynomial interpolation, we'll recover the coefficients using an expansion from
 the newton polynomial. Note: this algorithm is a bit tricky. If you don't follow it right
 away, I'd suggest thinking about deriving it yourself directly and compare results. If you
 still are having difficulty, it's okay to skim this section. The important things are that
@@ -222,18 +222,18 @@ runtime complexity comes from in the algorithm.</p>
 <p>A newton polynomial looks like:</p>
 <pre><code>p(x) = k0 + k1*(x-x0) + k2*(x-x0)*(x-x1) + k3*(x-x0)*(x-x1)*(x-x2) + ...
 </code></pre>
-<p>Our algorithm will maintain two polynomials (stored in monomial coefficent form):</p>
+<p>Our algorithm will maintain two polynomials (stored in monomial coefficient form):</p>
 <ol>
 <li>The <code>p(x)</code> polynomial constructed so far</li>
 <li>The <code>z(x)</code> polynomial of <code>(x - c)</code> factors so far</li>
 </ol>
-<p>We can iteratively add a new interpolant point each step with the steps:</p>
+<p>We can iteratively add a new point each step with the steps:</p>
 <ol>
 <li>Solve for <code>k</code> by evaluating <code>p(x)</code> and <code>z(x)</code></li>
 <li>Update <code>p</code> as  <code>p = p + k * z</code></li>
 <li>Update <code>z</code> as <code>z = z * (x - c)</code></li>
 </ol>
-<p>Since we'll maintain <code>p(x)</code> in monomial coefficent form, the final answer is
+<p>Since we'll maintain <code>p(x)</code> in monomial coefficient form, the final answer is
 just <code>p(x)</code> whenever we finish adding new points.</p>
 <p>This algorithm has runtime complexity <code>O(n^2)</code> where <code>n</code> is the number of evaluations
 interpolated. This is because we're doing <code>O(n)</code> polynomial evaluations and updates
@@ -267,7 +267,7 @@ in the inner loop, and we're looping over <code>n</code> points.</p>
         // Let's simplify a bit first by distributing:
         //   z' = z * x - z * x0
         //
-        // Now notice that multiplying by `x` is a shift of the coefficents.
+        // Now notice that multiplying by `x` is a shift of the coefficients.
         // This leads to the form we'll use:
         //   z' = shift(z) + (-x0)*z
         //
@@ -301,12 +301,12 @@ distinct elements of <code>GF(256)</code>. We choose: <code>[42, 222, 2, 8, 99]<
     assert_eq!(data.len(), K);
     assert_eq!(X.len(), N);
 
-    // Just treat the data as if it's polynomial coefficents and evaluate!
+    // Just treat the data as if it's polynomial coefficients and evaluate!
     poly_eval(data, &amp;X)
 }
 </code></pre>
 <p>Let's write the decode routine. We'll specify erasures using <code>Some(x)</code> and <code>None</code> in Rust. This is not
-a common way to do it, but it illustrates the idea of erasures very well. Also, we have the possiblity
+a common way to do it, but it illustrates the idea of erasures very well. Also, we have the possibility
 that decode could fail if too many erasures happen. This is indicated by returning None.</p>
 <pre><code class="language-rust">pub fn reed_solomon_poly_decode(encoded: &amp;[Option&lt;GF&gt;]) -&gt; Option&lt;Vec&lt;GF&gt;&gt; {
     // Sanity check
@@ -337,7 +337,7 @@ that decode could fail if too many erasures happen. This is indicated by returni
 }
 </code></pre>
 <h4>Testing Time</h4>
-<p>You always write tests for you code too... right? Riiiight!? I always do of course (<strong>wink</strong>)</p>
+<p>You always write tests for your code too... right? Riiiight!? I always do of course (<strong>wink</strong>)</p>
 <pre><code class="language-rust">#[cfg(test)]
 mod tests {
     use super::*;

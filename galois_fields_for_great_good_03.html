@@ -62,7 +62,7 @@
 operator-overloading so we can use the normal operators: +, -, *, /</p>
 <pre><code class="language-rust">use std::ops::{Add, Mul, Sub, Div};
 </code></pre>
-<p>Rust supports <a href="https://practice.rs/generics-traits/const-generics.html">Const Generics</a>,
+<p>Rust supports <a href="https://practice.course.rs/generics-traits/const-generics.html">Const Generics</a>,
 but that adds a lot of extra syntax noise which may be distracting for readers without
 a background in Rust or C++.</p>
 <p>Instead, we'll just define a simple constant. If you'd like to explore a <code>GF(p)</code> field for a
@@ -168,7 +168,7 @@ methods in later sections.</p>
 </code></pre>
 <p>Similarly to subtraction, we can implement division in terms of multiplication
 and inversion since: <code>a / b = a * inv(b)</code></p>
-<p>Notice we that division by zero panics. We expect the user to avoid attempting a divide by zero.</p>
+<p>Notice that division by zero panics (crashes). We expect the user to avoid attempting a divide by zero.</p>
 <pre><code class="language-rust">impl Div&lt;GF&gt; for GF {
   type Output = GF;
   fn div(self, rhs: Self) -&gt; GF {

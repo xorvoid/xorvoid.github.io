@@ -56,16 +56,18 @@ next (soon)</p>
 [next](galois_fields_for_great_good_11.html)
 -->
 
-<h2>Reed-Solomon Polynomial View</h2>
+<h2>Reed-Solomon as Polynomial Representation</h2>
 <p>This is part 10 of a series on Abstract Algebra. In this part, we'll start exploring Reed-Solomon Erasure Codes.</p>
-<p>I originally planned this topic to be a single article, but as I refreshed my own understanding I realized there are multiple ways of viewing Reed-Solomon, each with its own merits. Most discussions of the topic approach it from one fixed interpretation. This leads to a lot of confusion. Since this series is intended as a beginner's guide/survey, I decided it would be helpful to discuss a few different views/interpretations of Reed-Solomon one-at-a-time.</p>
-<p>This article presents the first and original interpretation: polynomial evaluation and interpolation.</p>
+<p>I originally planned this topic to be a single article, but as I refreshed my own understanding I realized there are multiple ways of viewing Reed-Solomon codes, each with its own merits.
+Most discussions of the topic approach it from one fixed interpretation. This leads to a lot of confusion.</p>
+<p>Since this series is intended as a beginner's guide/survey, I decided it would be helpful to discuss a few different views/interpretations of Reed-Solomon one-at-a-time.</p>
+<p>This article presents the first and original interpretation: <strong>polynomial evaluation and interpolation</strong>.</p>
 <h3>Motivation for Erasure Coding</h3>
-<p>In the article on CRC codes, I introduced Coding Theory from the orientation of signal noise and corruption. We build an error-detecting code. However, we didn't discuss how one might develop an error-correcting code.</p>
+<p>In the article on CRC codes, I motivating Coding Theory using the reality of signal noise/corruption. We then build an <em>error-detecting</em> code. However, we didn't discuss how one might develop an <em>error-correcting</em> code. Here we'll do just that!</p>
 <p>Consider you have a message to send that can be broken up into <code>3</code> data blocks. We'd like to add redundancy blocks and transmit <code>5</code> encoded blocks. Suppose we have some way to detect block corruption (e.g. using CRC). If a block is corrupted, we can treat it as <em>not present</em> or <strong>erased</strong>. And, as long as only some blocks are erased, we want to be able to decode it successfully.</p>
 <p>Our scheme looks like this:</p>
 <p><img alt="image" src="erasure.png" /></p>
-<p>Here, 2 arbitrary blocks are erased in transmission, but we wish to still decode the original data blocks using the remaining 3 encoded blocks. Notice that naive schemes like "send the data twice" or "send a parity block" won't work here.</p>
+<p>Here, 2 arbitrary blocks are erased in transmission, but we can still decode the original data blocks using the remaining 3 encoded blocks. Notice that naive schemes like "send the data twice" or "send a parity block" won't work here.</p>
 <p>Instead, we need a special <a href="https://en.wikipedia.org/wiki/Erasure_code"><strong>erasure code</strong></a> for this task.</p>
 <p>So, how can this be done?</p>
 <h3>Polynomials</h3>
@@ -97,7 +99,6 @@ next (soon)</p>
 </table>
 
 <p>The key property is that we can pick any three of these point evaluations to represent the polynomial <em>uniquely</em>!</p>
-<p>FIXME: Add some kind of proof??</p>
 <p>This means that all of the following represent the <em>exact same</em> polynomial:</p>
 <table>
 <thead>
@@ -129,10 +130,10 @@ next (soon)</p>
 </tr>
 </tbody>
 </table>
-<p>For each group of three points we choose, we have another data-vector that can represent our polynomial. For the real-numbers, this means there are infinitely many possible representations in evaluation form! In general, if we have an nth degree polynomial over the field <code>GF(k)</code>, we have $k \choose {n+1}$ possible evaluation representations.</p>
+<p>For each group of three points we choose, there is a set of values that can represent our polynomial. For the real-numbers, this means there are infinitely many possible representations in evaluation form! In general, if we have an nth degree polynomial over the field <code>GF(k)</code>, we have $k \choose {n+1}$ possible evaluation representations.</p>
 <p>This is the core idea that leads to Reed-Solomon Codes.</p>
-<h3>Reed and Solomon's Big Idea</h3>
-<p>The big idea of Reed-Solomon Codes is just the following:</p>
+<h3>Reed-Solomon's Big Idea</h3>
+<p>The big idea is simply:</p>
 <ul>
 <li>Encoding is polynomial evaluation (from coefficients to evaluations)</li>
 <li>Decoding is polynomial interpolation (from evaluations to coefficients)</li>
@@ -141,25 +142,25 @@ next (soon)</p>
 <p>We start with the 3 data points (or blocks):</p>
 <pre><code>[5, 2, 3]
 </code></pre>
-<p>In Reed-Solomon, we immediately treat the data as coefficients of some polynomial. In this case, its the polynomial we plotted above: <code>5x^2 + 2x + 3</code></p>
+<p>In Reed-Solomon, we immediately treat this data as coefficients of some polynomial. In this case, its the polynomial we plotted above: <code>5x^2 + 2x + 3</code></p>
 <p>We now evaluate this polynomial at 5 points. These are just the evaluations given above. Thus, our encoded points (blocks) are just:</p>
 <pre><code>[10, 27, 54, 91, 138]
 </code></pre>
-<p>It's worth noting that there is an implicit shared vector of the evaluation points used (<code>[1, 2, 3, 4, 5]</code>). Often these are simply hardcoded directly into the encode/decode algorithms (as we'll see in future articles).</p>
+<p>It's worth noting that there is an implicit shared vector of the evaluation points used (<code>[1, 2, 3, 4, 5]</code>). Often these are simply hardcoded directly into the encode/decode algorithms and don't need to be transmitted.</p>
 <p>This is it for encoding. We simply transmit the above vector and allow any erasures to occur.</p>
 <h4>Decoding</h4>
-<p>For decoding, we with to take any 3 of the 5 evaluations and reconstruct the polynomial coefficients. Suppose (for example) this is <code>[10, 54, 91]</code> (using evaluation points: <code>[1, 3, 4]</code>).</p>
-<p>We need to perform <em>polynomial interpolation</em>. We know from maths that there is exactly one unique set of polynomial coefficients. But, how do we find this?</p>
-<p>At this point, it's common to introduce <a href="">Lagrange Polynomials</a>, but these are harder to compute with. Instead, we'll be using <a href="https://en.wikipedia.org/wiki/Newton_polynomial">Newton Polynomials</a>. We'll introduce it by example.</p>
-<p>We'll build up the polynomial by adding one point at a time. When we add a point, we'll be careful to ensure that the previously added points are still correct.</p>
-<p>Let's start with <code>p(1) = 10</code>. Well this is easy, just a constant function suffices:</p>
+<p>For decoding, we wish to take any 3 of the 5 evaluations and reconstruct the polynomial coefficients.</p>
+<p>Let's use these: <code>[10, 54, 91]</code> (with evaluation points: <code>[1, 3, 4]</code>).</p>
+<p>We need to perform <em>polynomial interpolation</em>. Now, typically <a href="https://en.wikipedia.org/wiki/Lagrange_polynomial">Lagrange Polynomials</a> as used for this, but these are harder to compute with.</p>
+<p>Instead, we'll be using <a href="https://en.wikipedia.org/wiki/Newton_polynomial">Newton Polynomials</a> to build the polynomial <code>p(x)</code>, adding one point at a time.</p>
+<p>Let's start with <code>p(1) = 10</code>. This is just the constant function:</p>
 <pre><code>p(x) = 10
 </code></pre>
-<p>Now we add <code>p(3) = 54</code> but we need to ensure we retain <code>p(1) = 10</code>.</p>
+<p>Now we'll add <code>p(3) = 54</code> but we need to ensure we retain <code>p(1) = 10</code>.</p>
 <p>This looks like:</p>
 <pre><code>p(x) = 10 + 22(x - 1)
 </code></pre>
-<p>We cleverly use the <code>(x-1)</code> factor to ensure that the second term is 0 when <code>x = 1</code>. The scalar <code>22</code> comes from solving <code>10 + k(x - 1) = 54</code> when <code>x = 3</code>.</p>
+<p>Here, we cleverly use the <code>(x - 1)</code> factor to ensure the second term is <code>0</code> when <code>x = 1</code>.</p>
 <p><i><u>Exercise:</u></i> Solve <code>10 + k(3 - 1) = 54</code> for <code>k</code>. You should get <code>22</code></p>
 <p><i><u>Exercise:</u></i> Evaluate <code>10 + 22(x - 1)</code> for <code>x = 1</code>. You should get <code>10</code></p>
 <p><i><u>Exercise:</u></i> Evaluate <code>10 + 22(x - 1)</code> for <code>x = 3</code>. You should get <code>54</code></p>
@@ -171,26 +172,27 @@ next (soon)</p>
 <p><i><u>Exercise:</u></i> Evaluate <code>10 + 22(x - 1) + 5(x - 1)(x - 3)</code> for <code>x = 1</code>. You should get <code>10</code></p>
 <p><i><u>Exercise:</u></i> Evaluate <code>10 + 22(x - 1) + 5(x - 1)(x - 3)</code> for <code>x = 3</code>. You should get <code>54</code></p>
 <p><i><u>Exercise:</u></i> Evaluate <code>10 + 22(x - 1) + 5(x - 1)(x - 3)</code> for <code>x = 4</code>. You should get <code>91</code></p>
-<p>This is the general pattern to constructing a newton polynomial: keep adding terms using <code>(x - k)</code> factors for previous x's</p>
+<p>This is the general procedure for constructing a Newton Polynomial: keep adding terms using <code>(x - k)</code> factors to zero out previous x's</p>
 <p>Now, let's expand this polynomial back to monomial form to recover the original constants:</p>
 <pre><code class="language-text">p(x) = 10 + 22(x - 1) + 5(x - 1)(x - 3)
      = 10 + 22x - 22 + 5x^2 - 20x + 15
      = (5x^2) + (22x - 20x) + (10 - 22 + 15)
      = 5x^2 + 2x + 3
 </code></pre>
-<p>Excellent. We've recovered the original data vector: <code>[5, 2, 3]</code>!</p>
+<p>Excellent. We've recovered the original data vector: <code>[5, 2, 3]</code>.</p>
 <p>Similarly, we can recover the coefficients from any subset of 3 points and in any order!</p>
+<p><i><u>Exercise:</u></i> Construct the newton polynomial using the evaluations <code>[91, 54, 10]</code> (points: <code>[4, 3, 1]</code>). Convert this to monomial form to recover the coefficients. You should get <code>[5, 2, 3]</code>. Notice: this uses the same points as before but in reversed order.</p>
 <p><i><u>Exercise:</u></i> Construct the newton polynomial using the evaluations <code>[10, 27, 54]</code> (points: <code>[1, 2, 3]</code>). Convert this to monomial form to recover the coefficients. You should get <code>[5, 2, 3]</code>.</p>
-<p><i><u>Exercise:</u></i> Choose another set of 3 evaluations. Build a newton polynomial again and convert to monomial form. You should get <code>[5, 2, 3]</code>. Repeat this exercise until you fully understand decoding.</p>
+<p><i><u>Exercise:</u></i> Evaluate the polynomial <code>5x^2 + 2x + 3</code> at three new points. Then, build a newton polynomial with them and convert to monomial form. You should get <code>[5, 2, 3]</code>. Repeat this exercise until you fully understand decoding.</p>
 <h2>Implementing Reed-Solomon</h2>
-<p>We'll now implement Reed-Solomon using this polynomial idea. Unlike the discussion above, we'll be using <code>GF(256)</code> instead of the Real Numbers. This should feel natural given our prior discussions on fields. Using <code>GF(256)</code> allows us to take data bytes (<code>u8</code>) and encode them to other data bytes (<code>u8</code>).</p>
-<p>An aside: One fun quirk of this construction is that an element of <code>GF(256)</code> itself can be interpreted as a polynomial. So, this view of Reed-Solomon can be seen as "polynomials over polynomials over <code>GF(2)</code>" 😈. Math is great! But, this is actually an important observation that leads to XOR codes like Cauchy-Reed-Solomon. However, we're not ready to discuss that yet.</p>
-<p>Time to code!</p>
+<p>We'll now implement Reed-Solomon using this idea of polynomial representations. We will use <code>GF(256)</code> instead of the Real Numbers for the implementation. Using <code>GF(256)</code> allows us to take data bytes (<code>u8</code>) and encode them to other data bytes (<code>u8</code>).</p>
+<p><em>An aside:</em> A fun quirk of this construction is that an element of <code>GF(256)</code> itself can be interpreted as a polynomial. So, we can view Reed-Solomon as <em>polynomials over polynomials over <code>GF(2)</code></em> 😈. Believe it or not, this is actually a useful observation! It leads to the important Cauchy-Reed-Solomon XOR Codes. We might discuss them in a future article.</p>
+<p>Okay, let's get on with coding!</p>
 <h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/reed_solomon_poly.rs"><code>src/reed_solomon_poly.rs</code></a></h3>
 <pre><code class="language-rust">use crate::gf_256::GF;
 </code></pre>
 <h4>Polynomial Evaluation</h4>
-<p>We will need a routine to evaluate polynomials. For this we'll accept an array of coefficients and
+<p>First, we need a routine to evaluate polynomials. Our routine will take an array of coefficients and
 an evaluation point. We will use <a href="https://en.wikipedia.org/wiki/Horner%27s_method">Horner's Method</a>
 for the algorithm. This allows us to do an evaluation in <code>O(n)</code> time.</p>
 <pre><code class="language-rust">fn poly_eval_point(coeffs: &amp;[GF], x: GF) -&gt; GF {
@@ -213,69 +215,73 @@ where <code>n</code> is the number of coefficients and <code>m</code> is the num
 }
 </code></pre>
 <h4>Polynomial Interpolation</h4>
-<p>For polynomial interpolation, we'll recover the coefficients using an expansion from
-the newton polynomial. Note: this algorithm is a bit tricky. If you don't follow it right
-away, I'd suggest thinking about deriving it yourself directly and compare results. If you
-still are having difficulty, it's okay to skim this section. The important things are that
-(1) you know that polynomial interpolation is not magic, and (2) you understand where the
-runtime complexity comes from in the algorithm.</p>
-<p>A newton polynomial looks like:</p>
+<p>For polynomial interpolation, we'll recover the coefficients by constructing a Newton Polynomial. But, unlike our
+practice examples, we'll store all polynomials in monomial form.</p>
+<p>Note: this algorithm is a bit tricky. If you don't follow it right
+away, I'd suggest deriving it yourself directly and comparing results. If you
+still are having difficulty, it's okay to skim this section. The important parts are:
+(1) understanding that polynomial interpolation is not magic, and (2) understanding the
+runtime complexity of the algorithm</p>
+<p>Recall that a Newton Polynomial has the form:</p>
 <pre><code>p(x) = k0 + k1*(x-x0) + k2*(x-x0)*(x-x1) + k3*(x-x0)*(x-x1)*(x-x2) + ...
 </code></pre>
-<p>Our algorithm will maintain two polynomials (stored in monomial coefficient form):</p>
+<p>For our implementation, we'll maintain two polynomials:</p>
 <ol>
 <li>The <code>p(x)</code> polynomial constructed so far</li>
 <li>The <code>z(x)</code> polynomial of <code>(x - c)</code> factors so far</li>
 </ol>
-<p>We can iteratively add a new point each step with the steps:</p>
+<p>We can add new points by combining these polynomials (using a suitable <code>k</code>):</p>
+<pre><code>p'(x) = p(x) + k*z(x)
+</code></pre>
+<p>For each new point <code>(xk, yk)</code>, we will use the steps:</p>
 <ol>
-<li>Solve for <code>k</code> by evaluating <code>p(x)</code> and <code>z(x)</code></li>
-<li>Update <code>p</code> as  <code>p = p + k * z</code></li>
-<li>Update <code>z</code> as <code>z = z * (x - c)</code></li>
+<li>Solve for <code>k</code> with <code>k = (yk - p(xk))/z(xk)</code></li>
+<li>Update <code>p</code> with  <code>p = p + k * z</code></li>
+<li>Update <code>z</code> with <code>z = z * (x - xk)</code></li>
 </ol>
-<p>Since we'll maintain <code>p(x)</code> in monomial coefficient form, the final answer is
+<p>We will also maintain the polynomials <code>p(x)</code> and <code>z(x)</code> in monomial coefficient form. This makes them
+easy to combine and evaluate. It also means that the final answer is
 just <code>p(x)</code> whenever we finish adding new points.</p>
-<p>This algorithm has runtime complexity <code>O(n^2)</code> where <code>n</code> is the number of evaluations
-interpolated. This is because we're doing <code>O(n)</code> polynomial evaluations and updates
-in the inner loop, and we're looping over <code>n</code> points.</p>
+<p>Finally, notice that this algorithm has runtime complexity <code>O(n^2)</code> where <code>n</code> is the number of points
+interpolated. This is because the inner loop is <code>O(n)</code> and we're looping over <code>n</code> points.</p>
+<p>Okay, let's code it:</p>
 <pre><code class="language-rust">fn poly_interpolate(evals: &amp;[GF], xs: &amp;[GF]) -&gt; Vec&lt;GF&gt; {
     // Sanity check
     assert_eq!(evals.len(), xs.len());
 
-    // Setup
+    // Initialize our polynomials to p(x) = 0 and z(x) = 1
     let n = xs.len();
     let mut p = vec![GF::new(0); n];
     let mut z = vec![GF::new(0); n];
     z[0] = GF::new(1);
 
-    // Loop over each evaluation point
+    // Loop over each point
     for i in 0..n {
         // Unpack the point for this iteration
-        let x0 = xs[i];
-        let y0 = evals[i];
+        let xk = xs[i];
+        let yk = evals[i];
 
-        // Step 1: Solve k = (y0 - p(x0)) / z(x0)
-        let k = (y0 - poly_eval_point(&amp;p, x0)) / poly_eval_point(&amp;z, x0);
+        // Step 1: Solve k = (yk - p(xk)) / z(xk)
+        let k = (yk - poly_eval_point(&amp;p, xk)) / poly_eval_point(&amp;z, xk);
 
         // Step 2: Update the polynomial: p' = p + k * z
         for j in 0..n {
             p[j] = p[j] + k * z[j];
         }
 
-        // Step 3: Update the &quot;zero&quot; polynomial: z' = z * (x - x0)
+        // Step 3: Update the z polynomial: z' = z * (x - xk)
         //
         // Let's simplify a bit first by distributing:
-        //   z' = z * x - z * x0
+        //   z' = z * x - z * xk
         //
         // Now notice that multiplying by `x` is a shift of the coefficients.
         // This leads to the form we'll use:
-        //   z' = shift(z) + (-x0)*z
+        //   z' = shift(z) - xk * z
         //
-        let x0_neg = x0.negate();
         for j in (1..n).rev() { // update in reverse
-            z[j] = z[j-1] + x0_neg * z[j];
+            z[j] = z[j-1] - xk * z[j];
         }
-        z[0] = x0_neg * z[0];
+        z[0] = GF::new(0) - xk * z[0];
     }
 
     // The final result is just `p`
@@ -283,19 +289,18 @@ in the inner loop, and we're looping over <code>n</code> points.</p>
 }
 </code></pre>
 <h4>Reed-Solomon Encoding and Decoding</h4>
-<p>Okay, time for encoding and decoding functions. Similar to how we built fields, we'll be hardcoding the parameters for this
-particular Reed-Solomon code. Feel free to change them and experiment!</p>
-<pre><code class="language-rust">const K: usize = 3;                     // Number of data elements (before encoding)
-const N: usize = 5;                     // Number of encoded elements
+<p>Now, we'll implement the encoding and decoding functions. First, we'll to define a few parameters:</p>
+<pre><code class="language-rust">const K: usize = 3;  // Number of data elements (before encoding)
+const N: usize = 5;  // Number of encoded elements
 </code></pre>
 <p>We also need to specify the evaluation points. We need to have <code>N</code> of these.
 For this variant of Reed-Solomon, it really doesn't matter what we pick. They just need to be
-distinct elements of <code>GF(256)</code>. We choose: <code>[42, 222, 2, 8, 99]</code>.</p>
+distinct elements of <code>GF(256)</code>:</p>
 <pre><code class="language-rust">const X: [GF; 5] = [
     GF::new(42), GF::new(222), GF::new(2), GF::new(8), GF::new(99)
 ];
 </code></pre>
-<p>Let's write the encode routine. This is just a trivial wrapper around polynomial evaluation!</p>
+<p>The encode routine is just a simple wrapper around polynomial evaluation</p>
 <pre><code class="language-rust">pub fn reed_solomon_poly_encode(data: &amp;[GF]) -&gt; Vec&lt;GF&gt; {
     // Sanity check
     assert_eq!(data.len(), K);
@@ -305,9 +310,8 @@ distinct elements of <code>GF(256)</code>. We choose: <code>[42, 222, 2, 8, 99]<
     poly_eval(data, &amp;X)
 }
 </code></pre>
-<p>Let's write the decode routine. We'll specify erasures using <code>Some(x)</code> and <code>None</code> in Rust. This is not
-a common way to do it, but it illustrates the idea of erasures very well. Also, we have the possibility
-that decode could fail if too many erasures happen. This is indicated by returning None.</p>
+<p>For decoding, we'll specify presence/erasure using the <code>Option&lt;GF&gt;</code> type. If present, we have <code>Some(x)</code> and otherwise <code>None</code>.
+This is not a common way to do it, but it illustrates the idea of erasures very well.</p>
 <pre><code class="language-rust">pub fn reed_solomon_poly_decode(encoded: &amp;[Option&lt;GF&gt;]) -&gt; Option&lt;Vec&lt;GF&gt;&gt; {
     // Sanity check
     assert_eq!(encoded.len(), N);
@@ -337,77 +341,103 @@ that decode could fail if too many erasures happen. This is indicated by returni
 }
 </code></pre>
 <h4>Testing Time</h4>
-<p>You always write tests for your code too... right? Riiiight!? I always do of course (<strong>wink</strong>)</p>
+<p>First, we'll test that polynomial evaluation works correctly:</p>
 <pre><code class="language-rust">#[cfg(test)]
-mod tests {
-    use super::*;
+#[test]
+fn test_poly_eval() {
+    assert_eq!(poly_eval_point(&amp;[], GF::new(1)), GF::new(0));
+    assert_eq!(poly_eval_point(&amp;[GF::new(2)], GF::new(2)), GF::new(2));
+    assert_eq!(poly_eval_point(&amp;[GF::new(2), GF::new(2)], GF::new(3)), GF::new(4));
+    assert_eq!(poly_eval_point(&amp;[GF::new(46), GF::new(198), GF::new(0), GF::new(89)], GF::new(201)), GF::new(126));
+}
+</code></pre>
+<p>And we'll test polynomial interpolation</p>
+<pre><code class="language-rust">#[cfg(test)]
+#[test]
+fn test_poly_interpolate() {
+    let poly = poly_interpolate(
+        &amp;[GF::new(21), GF::new(21), GF::new(19)],
+        &amp;[GF::new(4), GF::new(5), GF::new(6)]
+    );
+    assert_eq!(poly, vec![GF::new(1), GF::new(1), GF::new(1)]);
 
-    #[test]
-    fn test_poly_eval() {
-        assert_eq!(poly_eval_point(&amp;[], GF::new(1)), GF::new(0));
-        assert_eq!(poly_eval_point(&amp;[GF::new(2)], GF::new(2)), GF::new(2));
-        assert_eq!(poly_eval_point(&amp;[GF::new(2), GF::new(2)], GF::new(3)), GF::new(4));
-        assert_eq!(poly_eval_point(&amp;[GF::new(46), GF::new(198), GF::new(0), GF::new(89)], GF::new(201)), GF::new(126));
+    let poly = poly_interpolate(
+        &amp;[GF::new(57), GF::new(56), GF::new(49)],
+        &amp;[GF::new(4), GF::new(5), GF::new(6)]
+    );
+    assert_eq!(poly, vec![GF::new(1), GF::new(2), GF::new(3)]);
+}
+</code></pre>
+<p>We should be able to decode up to 2-element erasures. But, 3-element erasures will fail.</p>
+<p>Let's test each possibility.</p>
+<pre><code class="language-rust">#[cfg(test)]
+fn encode_decode_all(data: &amp;[GF], expected_enc: &amp;[GF]) {
+    // encode
+    let enc = reed_solomon_poly_encode(data);
+    assert_eq!(enc, expected_enc);
+    let recv_all: Vec&lt;_&gt; = enc.iter().map(|x| Some(*x)).collect();
+
+    // decode with no erasures: success!
+    assert_eq!(reed_solomon_poly_decode(&amp;recv_all), Some(data.to_vec()));
+
+    // decode with all one element erasures: success!
+    for i in 0..N {
+        let mut recv = recv_all.clone();
+        recv[i] = None;
+        assert_eq!(reed_solomon_poly_decode(&amp;recv), Some(data.to_vec()));
     }
 
-    #[test]
-    fn test_poly_interpolate() {
-        let poly = poly_interpolate(
-            &amp;[GF::new(21), GF::new(21), GF::new(19)],
-            &amp;[GF::new(4), GF::new(5), GF::new(6)]
-        );
-        assert_eq!(poly, vec![GF::new(1), GF::new(1), GF::new(1)]);
-
-        let poly = poly_interpolate(
-            &amp;[GF::new(57), GF::new(56), GF::new(49)],
-            &amp;[GF::new(4), GF::new(5), GF::new(6)]
-        );
-        assert_eq!(poly, vec![GF::new(1), GF::new(2), GF::new(3)]);
+    // decode with all two element erasures: success!
+    for i in 0..N {
+        for j in (i+1)..N {
+            let mut recv = recv_all.clone();
+            recv[i] = None;
+            recv[j] = None;
+            assert_eq!(reed_solomon_poly_decode(&amp;recv), Some(data.to_vec()));
+        }
     }
 
-    #[test]
-    fn test_encode_decode() {
-        let data = vec![GF::new(100), GF::new(150), GF::new(200)];
-
-        // encode
-        let enc = reed_solomon_poly_encode(&amp;data);
-        assert_eq!(enc, vec![GF::new(160), GF::new(135), GF::new(94), GF::new(104), GF::new(194)]);
-        let recv_all: Vec&lt;_&gt; = enc.iter().map(|x| Some(*x)).collect();
-
-        // decode with no erasures
-        assert_eq!(reed_solomon_poly_decode(&amp;recv_all), Some(data.clone()));
-
-        // erase element 0 and decode
-        let mut recv = recv_all.clone();
-        recv[0] = None;
-        assert_eq!(reed_solomon_poly_decode(&amp;recv), Some(data.clone()));
-
-        // erase elements 1,2 and decode
-        let mut recv = recv_all.clone();
-        recv[1] = None;
-        recv[2] = None;
-        assert_eq!(reed_solomon_poly_decode(&amp;recv), Some(data.clone()));
-
-        // erase elements 2,4 and decode
-        let mut recv = recv_all.clone();
-        recv[2] = None;
-        recv[4] = None;
-        assert_eq!(reed_solomon_poly_decode(&amp;recv), Some(data.clone()));
-
-        // erase elements 1,2,3 and decode will fail
-        let mut recv = recv_all.clone();
-        recv[1] = None;
-        recv[2] = None;
-        recv[3] = None;
-        assert_eq!(reed_solomon_poly_decode(&amp;recv), None);
-
-        // erase elements 0,2,4 and decode will fail
-        let mut recv = recv_all.clone();
-        recv[0] = None;
-        recv[2] = None;
-        recv[4] = None;
-        assert_eq!(reed_solomon_poly_decode(&amp;recv), None);
+    // decode with all three element erasures: failure!
+    for i in 0..N {
+        for j in (i+1)..N {
+            for k in (j+1)..N {
+                let mut recv = recv_all.clone();
+                recv[i] = None;
+                recv[j] = None;
+                recv[k] = None;
+                assert_eq!(reed_solomon_poly_decode(&amp;recv), None);
+            }
+        }
     }
+}
+</code></pre>
+<p>Now we can test a bunch of different data vectors:</p>
+<pre><code class="language-rust">#[cfg(test)]
+#[test]
+fn test_encode_decode() {
+    // trivial
+    encode_decode_all(
+        &amp;[GF::new(0), GF::new(0), GF::new(0)],
+        &amp;[GF::new(0), GF::new(0), GF::new(0), GF::new(0), GF::new(0)],
+    );
+
+    // ones
+    encode_decode_all(
+        &amp;[GF::new(1), GF::new(1), GF::new(1)],
+        &amp;[GF::new(3), GF::new(161), GF::new(7), GF::new(73), GF::new(160)],
+    );
+
+    // pattern
+    encode_decode_all(
+        &amp;[GF::new(100), GF::new(150), GF::new(200)],
+        &amp;[GF::new(160), GF::new(135), GF::new(94), GF::new(104), GF::new(194)],
+    );
+
+    // random
+    encode_decode_all(
+        &amp;[GF::new(216), GF::new(196), GF::new(171)],
+        &amp;[GF::new(81), GF::new(157), GF::new(209), GF::new(193), GF::new(105)],
+    );
 }
 </code></pre>
 <h3>Building and Testing</h3>
@@ -415,11 +445,14 @@ mod tests {
 <pre><code>cargo test
 cargo build
 </code></pre>
-<h2>Discussion</h2>
-<p>And there you have it; an example of Reed-Solomon! The code we've implemented above is often called <code>RS(5,3)</code> over <code>GF(256)</code>. Generally, however using <code>GF(256)</code> here is overkill. We can use any field that has enough
-elements for <code>N</code> evaluations.</p>
 <h2>Conclusion</h2>
-<p>BLAH BLAH</p>
+<p>In about 60 non-comment lines of code, we have a working Reed-Solomon implementation. It is surprisingly straight-forward. It feels somewhat magical to me that we only need polynomials representations to build these codes. Mathematically, it's simple and elegant.</p>
+<p>However, this is a reference implementation. In practice, you won't find these codes implemented at all like this.</p>
+<p>In the next article, we'll continue exploring Reed-Solomon codes from a new perspective.</p>
+<p>It turns out that we can think about these codes as just some ordinary linear algebra (soon)!</p>
+<!--
+[next](galois_fields_for_great_good_11.html)
+-->
   </div>
   <div id="footer">
     <hr>

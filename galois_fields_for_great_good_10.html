@@ -63,7 +63,7 @@ Most discussions of the topic approach it from one fixed interpretation. This le
 <p>Since this series is intended as a beginner's guide/survey, I decided it would be helpful to discuss a few different views/interpretations of Reed-Solomon one-at-a-time.</p>
 <p>This article presents the first and original interpretation: <strong>polynomial evaluation and interpolation</strong>.</p>
 <h3>Motivation for Erasure Coding</h3>
-<p>In the article on CRC codes, I motivating Coding Theory using the reality of signal noise/corruption. We then build an <em>error-detecting</em> code. However, we didn't discuss how one might develop an <em>error-correcting</em> code. Here we'll do just that!</p>
+<p>In the article on CRC codes, I motivating Coding Theory using the reality of signal noise/corruption. We then built an <em>error-detecting</em> code. However, we didn't discuss how one might develop an <em>error-correcting</em> code. Here we'll do just that!</p>
 <p>Consider you have a message to send that can be broken up into <code>3</code> data blocks. We'd like to add redundancy blocks and transmit <code>5</code> encoded blocks. Suppose we have some way to detect block corruption (e.g. using CRC). If a block is corrupted, we can treat it as <em>not present</em> or <strong>erased</strong>. And, as long as only some blocks are erased, we want to be able to decode it successfully.</p>
 <p>Our scheme looks like this:</p>
 <p><img alt="image" src="erasure.png" /></p>

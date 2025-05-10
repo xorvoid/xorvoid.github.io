@@ -57,18 +57,18 @@ next (soon)</p>
 -->
 
 <h2>Reed-Solomon as Linear Algebra</h2>
-<p>This is part 10 of a series on Abstract Algebra. In this part, we'll continue exploring Reed-Solomon Erasure Codes.</p>
-<p>Last time we introduced Reed-Solomon in the context of polynomial evaluation and interpolation. This is the original view taken in the Reed-Solomon paper (CHECK THIS CLAIM AND LINK PAPER!!!).
-Here, we'll show some another way to interpret Reed-Solomon codes: as ordinary linear algebra!</p>
-<p>Note: This article assumes the reader understands: linear independence, linear combinations, matrix rank, and non-singularity conditions.</p>
+<p>This is part 11 of a series on Abstract Algebra. In this part, we'll continue exploring Reed-Solomon Erasure Codes.</p>
+<p>Last time we introduced Reed-Solomon as polynomial evaluation (encoding) and polynomial interpolation (decoding). This time, we'll recast those ideas in the framework of linear algebra. This will give us new capabilities and variants.</p>
+<p><strong>Background required:</strong> This article assumes the reader has a good understanding of linear algebra, including the concepts: matrix multiplication, inverses, solving linear-systems with LU factorization, linear independence, linear combinations, matrix rank, non-singularity conditions, etc.</p>
+<p>If you are missing some background, checkout the resources listed in <a href="galois_fields_for_great_good_09.html">part 9</a>.</p>
 <h3>A Matrix for Polynomial Evaluation</h3>
-<p>In the previous sections, we've often written a polynomial as just a vector of coefficients. For example, <code>p(x) = 5x^2 + 2x + 3</code> can be written as <code>[5, 2, 3]</code>.</p>
-<p>Suppose we wish to evaluate this polynomial at <code>x=2</code>. Using linear algebra, we can represent this evaluation as an inner-product (dot-product):</p>
+<p>Let's continue with the example from the previous article using the data vector <code>[3, 2, 5]</code> representing the polynomial <code>p(x) = 3 + 2x + 5x^2</code>. Suppose we wish to evaluate this polynomial at <code>x = 2</code>.</p>
+<p>Using linear algebra, we can represent this evaluation as an <em>inner-product</em> (also called a <em>dot-product</em>):</p>
 <p>
 $$
 \begin{align}
 p(2) &=
-5(2)^2 + 2(2) + 3
+3 + 2(2) + 5(2)^2
 \nonumber
 \\
 &= \left[ \begin{array}{ccc}
@@ -85,11 +85,11 @@ p(2) &=
 $$
 </p>
 
-<p>Similarly, we can evaluate many points $x = 1, 2, 3, 4, 5$ with a single matrix-vector product:</p>
+<p>Similarly, we can evaluate many points $\textbf{x} = (1, 2, 3, 4, 5)$ with a single matrix-vector product:</p>
 <p>
 $$
 \begin{align}
-p(\textbf{a})
+p(\textbf{x})
 &= \left[ \begin{array}{ccc}
 1 & 1 & 1^2 \\
 1 & 2 & 2^2 \\
@@ -121,10 +121,8 @@ p(\textbf{a})
 $$
 </p>
 
-<p>Notice that if we choose fixed evaluation points, then our $\textbf{A}$ matrix is also fixed.</p>
-<p>Let's study this matrix and see what we can learn!</p>
 <h3>Vandermonde Matrices</h3>
-<p>The $\textbf{A}$ matrix constructed is known as a <a href="https://en.wikipedia.org/wiki/Vandermonde_matrix"><strong>Vandermonde matrix</strong></a>.</p>
+<p>The $\textbf{A}$ matrix constructed above is known as a <a href="https://en.wikipedia.org/wiki/Vandermonde_matrix"><em>Vandermonde matrix</em></a>.</p>
 <p>Given some distinct constants $x_0, x_1, \dots, x_{n-1}$ the vandermonde matrix has the form:</p>
 <p>
 $$
@@ -134,31 +132,41 @@ $$
 1 & x_2 & x_2^2 & ... & x_2^{n-1} \\
 1 & x_3 & x_3^2 & ... & x_3^{n-1} \\
 1 & x_4 & x_4^2 & ... & x_4^{n-1} \\
-... \\
+\vdots & & & & \vdots \\
 1 & x_{n-1} & x_{n-1}^2 & ... & x_{n-1}^{n-1} \\
 \end{array} \right]
 $$
 </p>
 
-<p>A key property of this matrix is that it is always invertible as long as the $x_i$ are distinct (ADD PROOFS). This also gives intuition to what's happening in Reed-Solomon. If we construct a $5 \times 3$ Vandermonde matrix (as above), then we can "erase" any 2 rows and obtain a square $3 \times 3$ Vandermonde matrix. And this matrix will always be invertible!</p>
-<p>This also suggests some straightforward approaches to implementing Reed-Solomon using ordinary linear algebra.</p>
+<p>A square $n \times n$ vandermonde matrix is always invertible (as long as all $x_i$ are distinct).</p>
+<p>This gives intuition to what's happening in Reed-Solomon. Suppose we construct a $5 \times 3$ Vandermonde matrix (as above), then we can <strong>erase</strong> any 2 rows and obtain a square $3 \times 3$ Vandermonde matrix that is invertible!</p>
+<p>This property suggests a very straightforward approach to implementing Reed-Solomon using ordinary linear algebra.</p>
 <h3>Encoding/Decoding in Matrix Form</h3>
-<p>Let $A$ be the Vandermonde matrix for our desired Reed-Solomon code. Let $d$ be a vector of data to encode. And let $e$ be the encoded output vector.</p>
-<p>Encoding is simply:</p>
+<p>A few definitions:</p>
+<ul>
+<li>$\textbf{A}$: Vandermonde matrix for our desired Reed-Solomon code</li>
+<li>$\textbf{d}$: Vector of unencoded data</li>
+<li>$\textbf{e}$: Vector of encoded data</li>
+</ul>
+<p>Encoding is:</p>
 <p>
 $$
 \textbf{e} = \textbf{A} \textbf{d}
 $$
 </p>
 
-<p>For decoding, we simply erase rows from $A$ and $e$ until we have a square Vandermonde $A_r$ and $e_r$. And then we simply solve:</p>
+<p>Decoding is:</p>
+<ol>
+<li>Erase rows from $\textbf{A}$ and $\textbf{e}$ until we have a square Vandermonde $\textbf{A}_r$ and the corresponding $\textbf{e}_r$</li>
+<li>Solve the linear system for $d$:</li>
+</ol>
 <p>
 $$
-\textbf{d} = \textbf{A}_r^{-1} \textbf{e}_r
+\textbf{A}_r \textbf{d} = \textbf{e}_r
 $$
 </p>
 
-<p>That's it. The linear algebra view of Reed-Solomon is just ordinary matrix-vector multiply and ordinary linear system solving using a matrix that is gaurenteed to always be invertible (Vandermonde).</p>
+<p>It's exactly that simple!</p>
 <h3>A Worked Example</h3>
 <p>Let's work through an example to drive the idea home. We'll use the $5 \times 3$ Vandermonde matrix we constructed above:</p>
 <p>
@@ -182,7 +190,7 @@ $$
 $$
 </p>
 
-<p>For fun, let's use a new data vector:</p>
+<p>But, for fun, let's use a new data vector:</p>
 <p>
 $$
 \textbf{d} = 
@@ -192,7 +200,6 @@ $$
 $$
 </p>
 
-<p>This data vector cooresponds to the polynomial <code>2x^2 + 6</code>, but we won't need this fact in the linear algebra form.</p>
 <p>Let's encode:</p>
 <p>
 $$
@@ -216,7 +223,7 @@ $$
 </p>
 
 <p>Easy peasy.</p>
-<p>Okay, let's decode it. Let's erase the first two rows. This gives us:</p>
+<p>Okay, let's decode it. We'll erase the first two rows to get a square $3 \times 3$ matrix:</p>
 <p>
 $$
 \textbf{A}_r = 
@@ -233,7 +240,7 @@ $$
 $$
 </p>
 
-<p>Let's factor this matrix in <code>LU</code>:</p>
+<p>Let's solve the system $\textbf{A}_r \textbf{d} = \textbf{e}_r$ using an $\textbf{A}_r = \textbf{L}\textbf{U}$ factorization:</p>
 <p>
 $$
 \left[ \begin{array}{ccc}
@@ -255,7 +262,7 @@ $$
 $$
 </p>
 
-<p>Solving $Ly = e_r$</p>
+<p>Solving $\textbf{L}\textbf{y} = \textbf{e}_r$</p>
 <p>
 $$
 \left[ \begin{array}{ccc}
@@ -278,7 +285,7 @@ $$
 $$
 </p>
 
-<p>Solving $Ud = y$</p>
+<p>Solving $\textbf{U}\textbf{d} = \textbf{y}$</p>
 <p>
 $$
 \left[ \begin{array}{ccc}
@@ -302,12 +309,124 @@ $$
 
 <p>As desired $\square$</p>
 <p><i><u>Exercise:</u></i> Repeat this example, but erase the last two rows. You should still recover the $d$ vector</p>
-<h3>Discussion</h3>
-<p>BLAH about the encoding matrix being full-column-rank and thus the encodings are just linear combinations
-of independent vectors. The key being that thes larger vectors can be projected into a lower dimensional space and still be independent! This is the key idea!</p>
-<p>BLAH BLAH about how the vandermonde matrix isn't special. Blah about how we can use Cauchy matrix. Or any matrix that allows these projections to retain full independence.</p>
+<h3>Moving beyond Vandermonde</h3>
+<p>Above we just used ordinary linear algebra to do the same operations as polynomial evaluation and polynomial interpolation without a single polynomial in sight! The reason we can do this all comes back the invertibility of Vandermonde matrices.</p>
+<p>But this leads to a new ideas. Why does it have to be Vandermonde? Are there other matrices with the same invertibility properties? Can we use our linear algebra tools to construct one?</p>
+<p>What kind of matrix would be useful?</p>
+<h3>Systematic encoding matrices</h3>
+<p>One very useful $3 \times 5$ encoding matrix looks like:</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 \\
+a & b & c \\
+d & e & f \\
+\end{array} \right]
+$$
+</p>
+
+<p>This is called a <em>systematic encoding matrix</em> because the first <code>k</code> encoded elements are the same as the unencoded data:</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 \\
+a & b & c \\
+d & e & f \\
+\end{array} \right]
+\left[ \begin{array}{ccc}
+6 \\ 7 \\ 8 \\
+\end{array} \right]
+=
+\left[ \begin{array}{ccc}
+6 \\ 7 \\ 8 \\ p \\ q \\
+\end{array} \right]
+$$
+</p>
+
+<p>The additional rows <code>p</code> and <code>q</code> are often commonly called <em>parity</em> (for historical reasons).</p>
+<p>On encode, we only have to compute the parity rows (<code>p</code> and <code>q</code>). And, our decode is a trivial identity function unless one of the original data elements is erased. These features make systematic codes very popular in data-storage systems where storage devices fail infrequently.</p>
+<h3>Constructing systematic matrices</h3>
+<p>There are many ways to construct such a systematic matrix. We'll demonstrate a method that starts with a Vandermonde matrix and transforms it into a systematic matrix.</p>
+<p>Recall our $5 \times 3$ vandermonde matrix:</p>
+<p>
+$$
+\textbf{A} = 
+\left[ \begin{array}{ccc}
+1 & 1 & 1 \\
+1 & 2 & 4 \\
+1 & 3 & 9 \\
+1 & 4 & 16 \\
+1 & 5 & 25 \\
+\end{array} \right]
+$$
+</p>
+
+<p>Let's invert the upper $3 \times 3$ square:</p>
+<p>
+$$
+\textbf{A}_r^{-1} = 
+\left( \left[ \begin{array}{ccc}
+1 & 1 & 1 \\
+1 & 2 & 4 \\
+1 & 3 & 9 \\
+\end{array} \right] \right) ^ {-1}
+=
+\left[ \begin{array}{ccc}
+ 3   &  -3  &   1   \\
+-2.5 &   4  &  -1.5 \\
+ 0.5 &  -1  &   0.5 \\
+\end{array} \right]
+$$
+</p>
+
+<p>Now we can multiply with $\textbf{A}$:</p>
+<p>
+$$
+\begin{align}
+\textbf{A} \textbf{A}_r^{-1}
+&=
+\left[ \begin{array}{ccc}
+1 & 1 & 1 \\
+1 & 2 & 4 \\
+1 & 3 & 9 \\
+1 & 4 & 16 \\
+1 & 5 & 25 \\
+\end{array} \right]
+\left[ \begin{array}{ccc}
+ 3   &  -3  &   1   \\
+-2.5 &   4  &  -1.5 \\
+ 0.5 &  -1  &   0.5 \\
+\end{array} \right]
+\nonumber \\
+&= 
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 \\
+1 & -3 & 3 \\
+3 & -8 & 6 \\
+\end{array} \right]
+\nonumber
+\end{align}
+$$
+</p>
+
+<p>And now we've obtained the desired "parity" encoding rows:</p>
+<p>
+$$
+\left[ \begin{array}{ccc}
+1 & -3 & 3 \\
+3 & -8 & 6 \\
+\end{array} \right]
+$$
+</p>
+
 <h2>Implementing Reed-Solomon</h2>
-<p>Let's implement this in code! Like the previous section, we'll implement over <code>GF(256)</code>. We'll use our linear algebra routines developed in <a href="galois_fields_for_great_good_09.html">section 9</a>.</p>
+<p>Let's implement all of this in code! Like the previous section, we'll implement over <code>GF(256)</code>. And we'll use the linear algebra routines developed in <a href="galois_fields_for_great_good_09.html">part 9</a>.</p>
 <h3>Source Code: <a href="https://github.com/xorvoid/learn_you_galois_fields_for_great_good/blob/main/src/reed_solomon_linalg.rs"><code>src/reed_solomon_linalg.rs</code></a></h3>
 <pre><code class="language-rust">#![allow(non_snake_case)]
 #![allow(dead_code)]
@@ -534,6 +653,71 @@ fn test_systematic_encode_decode() {
     );
 }
 </code></pre>
+<h3>Linear Independence and Projection to K-dimensions</h3>
+<p>As this article shows, viewing Reed-Solomon codes as linear algebra can be very powerful. This view allows us to bring the tools of linear algebra to bear on erasure coding.</p>
+<p>One way to view a Vandermonde Matrix is as <code>K</code> linearly independent vectors in an <code>N</code> dimensional space. These vectors have the fascinating property that we can project them to <code>K</code> dimensions (by removing rows) and they remain linearly independent! In this way, we can view Reed-Solomon encoding as a simple linear-combination of basis vectors with these special properties!</p>
+<p>This observation leads us to non-Vandermonde encoding matrices that have this same key property. We saw previously that we could construct Systematic Matrices. But, we could also use <a href="https://en.wikipedia.org/wiki/Cauchy_matrix">Cauchy matrices</a> and these can lead to an interesting class of codes.</p>
+<p>We can also develop bespoke encoding matrices. If the size is small enough, it's tractable for a computer to verify that all square $K \times K$ sub-matrices are invertible.</p>
+<h3>Computational Complexity</h3>
+<p>We now have two equivalent encoding and decoding approaches to Reed-Solomon. Let's compare them in computational complexity.</p>
+<p>First some definitions:</p>
+<ul>
+<li><code>m</code>: number of polynomial evaluations / number of rows in the encoding matrix</li>
+<li><code>n</code>: number of polynomial coefficients / number of columns in the encoding matrix</li>
+<li><code>p</code>: number of parity rows used to decode a systematic code</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Runtime Complexity</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Encoding (Polynomial)</td>
+<td><code>O(mn)</code></td>
+<td>Each evaluation is <code>O(n)</code> and we perform <code>m</code> evaluations</td>
+</tr>
+<tr>
+<td>Encoding (Linear Algebra)</td>
+<td><code>O(mn)</code></td>
+<td>A matrix-vector multiply is <code>O(mn)</code>, i.e. each inner-product is <code>O(n)</code> and we perform <code>m</code> of them</td>
+</tr>
+<tr>
+<td>Encoding (Systematic)</td>
+<td><code>O(pn)</code></td>
+<td>Only the parity rows need to be computed</td>
+</tr>
+<tr>
+<td>Decoding (Polynomial)</td>
+<td><code>O(n^2)</code></td>
+<td>The inner-loop of interpolation is <code>O(n)</code> and we interpolate <code>n</code> points</td>
+</tr>
+<tr>
+<td>Decoding (Linear Algebra)</td>
+<td><code>O(n^3)</code></td>
+<td>An LU factorization is <code>O(n^3)</code> and an <code>LU</code> solve is <code>O(n^2)</code></td>
+</tr>
+<tr>
+<td>Decoding (Systematic)</td>
+<td><code>O(p^3 + np)</code></td>
+<td>Solving a $p \times p$ matrix after eliminating known data</td>
+</tr>
+</tbody>
+</table>
+<p>The above table shows that, while encoding is essentially equivalent, decoding is not. This is a commonly known effect of problems described in linear-algebra form.
+Linear algebra is a very general toolset and often specific problems have special structure that yield better algorithms.</p>
+<p>Despite this disadvantage, reasoning from a linear algebra perspective can still be very useful, as discussed above.</p>
+<p>Also, consider the case of decoding a systematic code using parity rows. In many cases, we may only need a few parity rows to recover the full data vector. In other words, <code>p</code> is small and <code>O(p^3 + np)</code> approaches <code>O(n)</code>, becoming an effectively linear decoding time!</p>
+<p>But, if <code>n</code> is large, can we do better that <code>O(mn)</code> encoding and <code>O(n^2)</code> decoding? Yes, we actually can. But, we'll have to wait for next time!</p>
+<h2>Conclusion</h2>
+<p>Well it's now <a href="https://youtu.be/g3ENX3aHlqU?si=fy64nJOVD6xGGf1d&amp;t=34">time to say goodbye</a>.</p>
+<p>Here, we've explored Reed-Solomon from the perspective of Linear Algebra. We barely even touched a polynomial in this article and came away with an implementation that passed the exact same tests as the polynomial version! The linear algebra variant is shockingly simple, but pays for the luxury in decoding performance.</p>
+<p>However, the linear algebra view is very useful for reasoning and allows us to introduce a wider variety of possible encoding matrices.</p>
+<p>Linear Algebra will also be very useful in the next article where we'll discuss a third view of Reed-Solomon that will help us achieve very fast encoding and decoding.</p>
+<p>What's your frequency, Kenneth? (soon)</p>
   </div>
   <div id="footer">
     <hr>

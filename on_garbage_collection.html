@@ -109,8 +109,7 @@ using escape-analysis, so it can eliminate runtime garbage-collector work.</p>
 <h2>Conversations I <em>want</em> to have</h2>
 <p>The conversations I actually <em>want</em> to have are about what a sensible opt-in garbage-collector could look like in a systems programming language. To date I only know one popular language that has made an attempt at doing a hybrid: <a href="https://dlang.org/">The D Programming Language</a>. They draw a distinction between <code>class</code> objects being garbage-collected and <code>struct</code> objects being manually-managed. But, if you use the metric "how many times has an idea been copied?", then this idea hasn't been particularly successful.</p>
 <p>I would love to see more exploration in this area. What systems programmers tend to dislike is large complicated runtimes / frameworks that they can't control. Is it possible to have opt-in garbage-collection that doesn't need to control the entire runtime? What trade-offs does that require? Is it still usable or does it just drown in its own complexity? How far can one go in a pure "library" form-factor? How composable can it be with the rest of the language? Etc.. etc.. etc.</p>
-<p>But until then, we'll all just keep rolling our own adhoc collectors whenever we're faced with yet another <code>num_owners &gt; 1</code> problem.</p>
-  </div>
+<p>But until then, we'll all just keep rolling our own adhoc collectors whenever we're faced with yet another <code>num_owners &gt; 1</code> problem.</p>  </div>
   <div id="footer">
     <hr>
     <p><a href="/">home</a></p>

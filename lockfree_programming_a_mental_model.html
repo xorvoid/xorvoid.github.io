@@ -415,8 +415,7 @@ void thread_2()
 </ul>
 <h2>Conclusion</h2>
 <p>As you can see, things seem far less scary and mystifying when you view a modern machine as a super-computer of many independent machines on a fast interconnect network. The operations one thinks about while doing lockfree programming is the series of <code>msg_send</code> and <code>msg_recv</code> operations across this “interconnect”. These operations are highly asynchronous. But, it’s quite straight-forward to enforce some order and structure to this chaos. Whenever things get a tad confusing, it’s quite easy to translate into the <code>msg_send</code> and <code>msg_recv</code> framing and think instead about network messages.</p>
-<p>My original goal in writing was to communicate some practical advice and “guidelines” for successful lockfree programming. But when I sat down to write that, I quickly realized that  a Mental Model needed to be developed first in order to frame the subject correctly. In the next (hypothetical) post, I’d like to return to that original goal and give some practical advice.</p>
-  </div>
+<p>My original goal in writing was to communicate some practical advice and “guidelines” for successful lockfree programming. But when I sat down to write that, I quickly realized that  a Mental Model needed to be developed first in order to frame the subject correctly. In the next (hypothetical) post, I’d like to return to that original goal and give some practical advice.</p>  </div>
   <div id="footer">
     <hr>
     <p><a href="/">home</a></p>

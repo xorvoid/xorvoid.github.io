@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js" integrity="sha384-v6mkHYHfY/4BWq54f7lQAdtIsoZZIByznQ3ZqN38OL4KCsrxo31SLlPiak7cj/Mg" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.18/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xorvoid</title>
+</head>
+
+<body class="grayscale">
+  <div id="header">
+    <h1><a href="/">xorvoid</a></h1>
+    <p>
+      <a href="/">home</a>
+      <a href="https://github.com/xorvoid">github</a>
+      <a href="rss.xml">rss</a>
+      <a href="https://www.linkedin.com/in/anthony-bonkoski-2563a158">linkedin</a>
+    </p>
+    <p>
+      <a href="https://www.buymeacoffee.com/xorvoid">buy me a coffee</a>
+    </p>
+    <hr>
+  </div>
+  <div id="main">
+<h1>Writing an entire C Compiler (while cycling the PCH)</h1>
+<p>Well, I had a crazy adventure this year.</p>
+<p>I wrote an entire C compiler from scratch including ARM64 codegen and the notorious C preprocessor. <a href="adventure_cycling.html">Also, I cycled up the entire PCH while doing it</a>.</p>
+<p>While I've written many toy compilers in the past (<a href="sectorc.html">SectorC</a>, <a href="forsp.html">Forsp</a>, etc), this was my first full-featured mainstream-language compiler.</p>
+<p>Some numbers:</p>
+<ul>
+<li>Lines of code: 8322</li>
+<li>Keywords recognized: 40</li>
+<li>Recursive-descent parsing routines: 41</li>
+<li>AST node types: 27</li>
+<li>Codegen emit calls: 156</li>
+<li>Testsuite assertions: 1044</li>
+<li>Pacific Coastlines Cycled: 1</li>
+</ul>
+<p>It was a fantastic adventure packed full of unforgetable moments. And it's impossible to document them all. But, here's a small summary.</p>
+<h2>Timeline</h2>
+<p><strong>2025-05-18</strong>:</p>
+<p><strong>2025-05-19</strong>:</p>
+<p><strong>2025-05-20</strong>:</p>
+<p><strong>2025-05-21</strong>:</p>
+<p><strong>2025-05-22</strong>:</p>
+<p><strong>2025-05-23</strong>:</p>
+<p><strong>2025-05-24</strong>: Add ++ and -- (both prefix and postfix)</p>
+<p><strong>2025-05-28</strong>:</p>
+<p><strong>2025-05-30</strong>:</p>
+<p><strong>2025-05-31</strong>:</p>
+<p><strong>2025-06-01</strong>:</p>
+<p><strong>2025-06-04</strong>:</p>
+<p><strong>2025-06-05</strong>:</p>
+<p><strong>2025-06-06</strong>:</p>
+<p><strong>2025-06-07</strong>:</p>
+<p><strong>2025-06-09</strong>:</p>
+<p><strong>2025-06-10</strong>:</p>
+<p><strong>2025-06-11</strong>:</p>
+<p><strong>2025-06-12</strong>:</p>
+<p><strong>2025-06-16</strong>:</p>
+<p><strong>2025-06-18</strong>:</p>
+<p><strong>2025-06-19</strong>:</p>
+<p><strong>2025-06-20</strong>:</p>
+<p><strong>2025-06-21</strong>:
+(lots of work this day.. on the preprocessor)</p>
+<p><strong>2025-06-23</strong>:</p>
+<p><strong>2025-06-24</strong>:
+(accept the fate of using hideset)</p>
+<p><strong>2025-06-26</strong>:</p>
+<p><strong>2025-06-27</strong>:
+(moar preprocessor)</p>
+<p><strong>2025-06-28</strong>:
+(misc preprocessor)</p>
+<p><strong>2025-06-29</strong>:</p>
+<p><strong>2025-06-30</strong>:</p>
+<p><strong>2025-07-01</strong>:</p>
+<h2>Events</h2>
+<p>Some events:</p>
+<ul>
+<li>blah</li>
+<li>I will forever associate the C preprocessor macro expansion algorithm with the state of Oregon</li>
+</ul>
+<p>...
+Since this dovelopment, I've implemented a backend IR and started doing some light optimizations.
+...</p>
+<p><a href="adventure_cycling.html">Also, I cycled up the entire PCH while doing all this</a>.</p>  </div>
+  <div id="footer">
+    <hr>
+    <p><a href="/">home</a></p>
+  </div>
+</body>
+</html>

@@ -87,7 +87,7 @@
 <td>Cache Line</td>
 </tr>
 <tr>
-<td>Maximum Transmision Unit (MTU)</td>
+<td>Maximum Transmission Unit (MTU)</td>
 <td>Cache Line Size (64 bytes, 128 bytes, etc)</td>
 </tr>
 <tr>
@@ -104,7 +104,7 @@
 <p>When you're programming lockfree data-structures, it’s <strong>very</strong> important to keep this idea in your head. When, where, and how you dereference a pointer to shared state is critical.</p>
 <p>One might wish that things were less “implicit”. For example: explicitly form an entire cache-line sized packet and broadcast it out. Unfortunately, the evolution of computing,  with it’s unceasing desire for backwards-compatibility, has lead to the present day. For a small number of cores (dual-core, quad-core, etc), it’s not unreasonable to pretend there is one big shared RAM. But for large core count machines, the mental model become untenable.</p>
 <h2>Reasonable Behaviors</h2>
-<p>Armed with this new mental model, let’s go look at real programs running on this super-computer. With the “one big machine” idea, these behaviors may seem bizzare, but with our reframing, I think you’ll find them quite intuitive</p>
+<p>Armed with this new mental model, let’s go look at real programs running on this super-computer. With the “one big machine” idea, these behaviors may seem bizarre, but with our reframing, I think you’ll find them quite intuitive</p>
 <h3>1. Loads are frequently stale</h3>
 <pre><code class="language-c">int *ptr_to_shared;
 

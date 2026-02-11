@@ -337,7 +337,7 @@ expr        = unary (op unary)?
 unary       = deref identifier
             | &quot;&amp;&quot; identifier
             | &quot;(&quot; expr &quot;)&quot;
-            | indentifier
+            | identifier
             | integer
 op          = &quot;+&quot; | &quot;-&quot; | &quot;&amp;&quot; | &quot;|&quot; | &quot;^&quot; | &quot;&lt;&lt;&quot; | &quot;&gt;&gt;&quot;
             | &quot;==&quot; | &quot;!=&quot; | &quot;&lt;&quot; | &quot;&gt;&quot; | &quot;&lt;=&quot; | &quot;&gt;=&quot;
